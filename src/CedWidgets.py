@@ -1,29 +1,37 @@
 #!/usr/bin/env python
 # -*- coding: ISO-8859-1 -*-
 
+## This file in part of Torseur3D
 #############################################################################
 #############################################################################
 ##                                                                         ##
-##                               CedWidgets                                ##
+##                                 CedWidgets                              ##
 ##                                                                         ##
 #############################################################################
 #############################################################################
 
-## Copyright (C) 2009-2010 Cédrick FAURY
+## Copyright (C) 2009-2012 Cédrick FAURY
 
-#    This program is free software; you can redistribute it and/or modify
+#    Torseur3D is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation; either version 2 of the License, or
+#    the Free Software Foundation; either version 3 of the License, or
 #    (at your option) any later version.
     
-#    This program is distributed in the hope that it will be useful,
+#    Torseur3D is distributed in the hope that it will be useful,
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
 #
 #    You should have received a copy of the GNU General Public License
-#    along with this program; if not, write to the Free Software
+#    along with Torseur3D; if not, write to the Free Software
 #    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+
+"""
+CedWidgets.py
+Bibliothèques de composants divers : widgets wx, fonctions de calcul, ...
+Copyright (C) 2012 Cédrick FAURY
+
+"""
 
 import wx
 import scipy
