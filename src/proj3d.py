@@ -29,6 +29,7 @@
 """
 proj3D.py
 Various transforms used for by the 3D code
+!! Modification pour Torseur3D d'un module de Matplotlib !!
 """
 
 from matplotlib.collections import LineCollection
