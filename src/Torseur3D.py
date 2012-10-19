@@ -117,7 +117,7 @@ MODE_DEMARRAGE = 0
 TAILLE_VECTEUR = 26
 TAILLE_POINT = 22
 TAILLE_COMPOSANTES = 16
-TAILLE_TICKS = 20
+TAILLE_TICKS = 14
 
 class Chronometre():
     def __init__(self):
@@ -997,9 +997,11 @@ class MPLDroite2D():
             return p != None and p.x <= x1+e and p.x >= x0-e and p.y <= y1+e and p.y >= y0-e
         
         
-        
-        x0, x1 = self.axe.get_xlim3d()
-        y0, y1 = self.axe.get_ylim3d()
+        try:
+            x0, x1 = self.axe.get_xlim3d()
+            y0, y1 = self.axe.get_ylim3d()
+        except:
+            return
         
         if self.vue == 'f':
             p0 = self.droite.intersectionPlan(Point(0, x0, 0), Vecteur(0,1,0))
