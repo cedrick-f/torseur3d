@@ -38,7 +38,7 @@ import os.path
 #import wx
 
 #import globdef
-from CedWidgets import VariableCtrl, Variable, VAR_REEL, EVT_VAR_CTRL, VAR_ENTIER_POS, VAR_REEL_POS
+from widgets import VariableCtrl, Variable, VAR_REEL, EVT_VAR_CTRL, VAR_ENTIER_POS, VAR_REEL_POS
 import wx.combo
 #import Images
 

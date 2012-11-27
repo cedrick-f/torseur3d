@@ -51,6 +51,7 @@ import proj3d
 import numpy as np
 
 from DAQ import *#InterfaceAcquisition
+from Saisie import *
 import DAQ
 import wx
 import threading
@@ -60,10 +61,10 @@ import random
 
 import Options
 
-from CedWidgets import *
+from widgets import *
 #import traceback
 
-VERSION = "1.0"
+VERSION = "1.1"
 
 
 
@@ -106,7 +107,7 @@ PRECISION_M = 2
 
 
 # Type de démo : 0 : aléatoire ; 1 = clavier
-TYPE_DEMO = 0
+TYPE_DEMO = 1
 PAS_R = 0.1  #N
 PAS_M = 0.01 #Nm
 
@@ -116,7 +117,7 @@ MODE_DEMARRAGE = 0
 # Tailles des polices sur la zone graphique mlp
 TAILLE_VECTEUR = 26
 TAILLE_POINT = 22
-TAILLE_COMPOSANTES = 16
+TAILLE_COMPOSANTES = 12
 TAILLE_TICKS = 14
 
 class Chronometre():
@@ -375,7 +376,11 @@ class MPLVecteur3D():
         y = [_y, p.y]
         z = [_z, p.z]
         self.set_artist_data(self.fleche, x, y, z)
-            
+        
+        self.x = x
+        self.y = y
+        self.z = z
+        
         x0 = [_x, _x]
         y0 = [_y, _y]
         z0 = [_z, _z]
@@ -477,6 +482,9 @@ class MPLVecteur3D():
         artists.append(self.text)
         self.artists = artists
     
+        self.x = [0]
+        self.y = [0]
+        self.z = [0]
     
     def set_visible(self, etat):
         for a in self.artists:
@@ -508,6 +516,8 @@ class MPLVecteur3D():
             vect = Vecteur(vect[0], vect[1], vect[2])
         self.vect.setComp(vect)
         
+    def get_data_lim(self):
+        return self.x, self.y, self.z
         
 ################################################################################
 ################################################################################
@@ -743,6 +753,9 @@ class MPLPoint3D():
         self.pt[0].set_ydata([ly])
         self.pt[0].set_3d_properties(zs = [lz])
         
+        self.lx = [lx]
+        self.ly = [ly]
+        self.lz = [lz]
         
         self.text.set_size(TAILLE_POINT/m)
         
@@ -757,7 +770,7 @@ class MPLPoint3D():
     def decaleTexte(self):
         ancre = self.text.get_horizontalalignment()
         if ancre == 'right':
-            print self.text.get_text()
+#            print self.text.get_text()
             lx = self.pt[0].get_xdata()[0]
             ly = self.pt[0].get_ydata()[0]
             lz = self.pt[0]._verts3d[2][0]
@@ -803,6 +816,12 @@ class MPLPoint3D():
         if not isinstance(point, Point):
             point = Point(point[0], point[1], point[2])
         self.point = point
+        
+        
+    def get_data_lim(self):
+        return self.lx, self.ly, self.lz
+        
+        
         
 #############################################################################################################
 class MPLPoint2D():
@@ -1097,6 +1116,7 @@ class Torseur3D(wx.Frame):
         self.DefinirOptions(options)
         print self.options
         
+        self.pause = False
         
         #
         # Ouverture de l'interface d'acquisition
@@ -1113,7 +1133,8 @@ class Torseur3D(wx.Frame):
             dlg.Destroy()
             self.onOptions(page = 0)
             
-        print DAQ.PORT
+        print "Port :",DAQ.PORT
+        
         self.InterfaceDAQ = InterfaceAcquisition()
         if not self.InterfaceDAQ.estOk():
             dlg = wx.MessageDialog(None, u'Il faut un port série pour utiliser Torseur3D\n\n' \
@@ -1130,14 +1151,15 @@ class Torseur3D(wx.Frame):
             if TYPE_DEMO == 0:
                 self.getTorseur = self.getRandomTorseur
             else:
-                self.getTorseur = self.getClavierTorseur
+                self.getTorseur = self.getManuelTorseur
         else:
             t = self.InterfaceDAQ.port
             self.getTorseur = self.InterfaceDAQ.getTorseur
         self.SetTitle("Torseur 3D "+VERSION+" - "+t)    
         
         
-        
+        self.pleinEcran = False
+        self.makeTB()
         
         
         
@@ -1162,24 +1184,21 @@ class Torseur3D(wx.Frame):
         self.nb.AddPage(self.pagePyStatic, "Equilibre d'une barre")
 
         self.nb.ChangeSelection(MODE_DEMARRAGE)
-
+        self.nb.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
         
         #
         # Le panel de commande
         #
+        psizer = wx.BoxSizer(wx.VERTICAL)
         size = (210,-1)
         self.panelCommande = wx.Panel(self, -1, size = size)
         self.panelCommande.SetMinSize(size)
         self.panelCommande.SetMaxSize(size)
-        btn = wx.Button(self.panelCommande, -1, u"&Tarer")
-        self.Bind(wx.EVT_BUTTON, self.onTarer, btn)
         
-        btnP = wx.ToggleButton(self.panelCommande, -1, u"&Pause")
-        self.Bind(wx.EVT_TOGGLEBUTTON, self.onPause, btnP)
-        self.boutonPause = btnP
-        
-        btnO = wx.Button(self.panelCommande, -1, u"&Options")
-        self.Bind(wx.EVT_BUTTON, self.onOptions, btnO)
+        if self.getTorseur != self.getManuelTorseur:
+            btn = wx.Button(self.panelCommande, -1, u"&Tarer")
+            self.Bind(wx.EVT_BUTTON, self.onTarer, btn)
+            psizer.Add(btn, flag = wx.EXPAND|wx.ALL, border = 3)
         
         vsizer = wx.BoxSizer(wx.HORIZONTAL)
         self.panelResultante = VecteurPanel(self.panelCommande, nom = r"$\vec{R}$", 
@@ -1194,47 +1213,88 @@ class Torseur3D(wx.Frame):
                                           self.tors.getBitmap(ncR = PRECISION_R, ncM = PRECISION_M))
         self.panelPointRed = PointCtrlPanel(self.panelCommande, self.OnPointRedModified, self.tors.P, nom = 'P', titre = u"Point de réduction (mm)", useMPL = True)
         self.pageTorseurs.miseAJourPtRed(self.tors.P)
-        
-        psizer = wx.BoxSizer(wx.VERTICAL)
-        psizer.Add(btn, flag = wx.EXPAND)
         psizer.Add(vsizer, flag = wx.EXPAND|wx.ALL)
+        
         psizer.Add(self.imgTorseurO, flag = wx.EXPAND|wx.ALL, border = 3)
         psizer.Add(self.imgTorseur, flag = wx.EXPAND|wx.ALL, border = 3)
         psizer.Add(self.panelPointRed, flag = wx.EXPAND|wx.ALL, border = 3)
-        psizer.Add(btnP, flag = wx.EXPAND)
-        psizer.Add(btnO, flag = wx.EXPAND)
         
-        self.panelCommande.SetSizer(psizer)
+        if self.getTorseur != self.getManuelTorseur:
+            btnP = wx.ToggleButton(self.panelCommande, -1, u"&Pause")
+            self.Bind(wx.EVT_TOGGLEBUTTON, self.onPause, btnP)
+            self.boutonPause = btnP
+            psizer.Add(btnP, flag = wx.EXPAND|wx.ALL, border = 3)
 
-
+        
+        if self.getTorseur != self.getManuelTorseur:
+            #
+            # Initialisation du Timer qui lit sur le port
+            #
+            periode = PERIODE
+            if DEBUG: periode = periode * 5
+            self.t = wx.Timer(self, TIMER_ID)
+            self.t.Start(periode)
+            wx.EVT_TIMER(self, TIMER_ID, self.onTimer)
+        else:
+            self.saisie = InterfaceSaisie(self.panelCommande, ECHELLE_R, ECHELLE_M)
+            psizer.Add(self.saisie, flag = wx.EXPAND|wx.ALL, border = 3)
+            self.saisie.Bind(EVT_VAR_CTRL, self.onVar)
+       
+        #
+        # Bouton "Options"
+        #
+        btnO = wx.Button(self.panelCommande, -1, u"&Options")
+        self.Bind(wx.EVT_BUTTON, self.onOptions, btnO)
+        psizer.Add(btnO, flag = wx.EXPAND|wx.ALL, border = 3)
+            
         #
         # Mise en place
         #
-        
+        self.panelCommande.SetSizer(psizer)
         hsizer = wx.BoxSizer(wx.HORIZONTAL)
         hsizer.Add(self.panelCommande, 0, flag = wx.EXPAND)
         hsizer.Add(self.nb, 1, flag = wx.EXPAND)
         self.SetSizer(hsizer)
         self.Fit()
-
-        #
-        # Initialisation du Timer qui lit sur le port
-        #
-        periode = PERIODE
-        if DEBUG: periode = periode * 5
-        self.t = wx.Timer(self, TIMER_ID)
-        self.t.Start(periode)
-        self.pause = False
-        
-        wx.EVT_TIMER(self, TIMER_ID, self.onTimer)            
+         
         wx.EVT_CLOSE(self, self.onClose)
-        wx.EVT_KEY_DOWN(self, self.onKey)
+#        wx.EVT_KEY_DOWN(self, self.onKey)
         self.SetFocus()
         
         self.onTarer()
     
         self.Bind(wx.EVT_CLOSE, self.quitter)
         
+    
+    ############################################################################  
+    def makeTB(self):
+        self.tb = self.CreateToolBar()
+        tsize = (24,24)
+        self.tb.SetToolBitmapSize(tsize)
+        
+        self.tb.AddSimpleTool(10, wx.Bitmap("Icone_fullscreen.png"), 
+                              u"Plein écran", u"Plein écran")
+        self.Bind(wx.EVT_TOOL, self.commandePleinEcran, id=10)
+        
+        self.tb.Realize()
+        
+    ###############################################################################################
+    def commandePleinEcran(self, event):
+        self.pleinEcran = not self.pleinEcran
+        if self.pleinEcran:
+            win = self.nb.GetCurrentPage()
+            self.fsframe = wx.Frame(None, -1)
+            win.Reparent(self.fsframe)
+            win.Bind(wx.EVT_KEY_DOWN, self.onKey)
+            self.fsframe.Show()
+#            self.fsframe.ShowFullScreen(True, style=wx.FULLSCREEN_ALL)
+        else:
+            win = self.fsframe.GetChildren()[0]
+            win.Reparent(self.nb)
+            self.fsframe.Destroy()
+            win.SendSizeEventToParent()
+    
+    
         
     ############################################################################  
     def optionsDefaut(self):
@@ -1259,15 +1319,18 @@ class Torseur3D(wx.Frame):
 
     ##########################################################################
     def OnPageChanged(self, event):
-        sel = event.GetSelection()
-        if sel == 0:
-            self.pagePyStatic.StopperThread()
-        
-        elif sel == 1:
-#            self.pagePyStatic.InitBuffer()
-            self.pagePyStatic.DemarrerThread()
-        self.options.optGenerales["MODE_DEMARRAGE"] = sel
+        self.onTimer(None)
         event.Skip()
+        
+#        sel = event.GetSelection()
+#        if sel == 0:
+#            self.pagePyStatic.StopperThread()
+#        
+#        elif sel == 1:
+##            self.pagePyStatic.InitBuffer()
+#            self.pagePyStatic.DemarrerThread()
+#        self.options.optGenerales["MODE_DEMARRAGE"] = sel
+        
             
             
     ##########################################################################
@@ -1288,12 +1351,14 @@ class Torseur3D(wx.Frame):
             if hasattr(self, 'nb'):
                 self.nb.GetCurrentPage().drawNouvOptions()
             
-            
         else:
             pass
 #            print "You pressed Cancel"
 
         dlg.Destroy()
+        
+        if event != None:
+            self.onTimer(None)
 
     ##########################################################################
     def DefinirOptions(self, options):
@@ -1323,10 +1388,12 @@ class Torseur3D(wx.Frame):
     ##########################################################################
     def onKey(self, event = None):
         keycode = event.GetKeyCode()
+        print "onKey"
         try:
             keyname = chr(keycode)
         except:
             keyname = ""
+            
         if keyname == "P":
             self.onPause(event)
             self.boutonPause.SetValue(self.pause)
@@ -1343,7 +1410,10 @@ class Torseur3D(wx.Frame):
         elif keycode == wx.WXK_LEFT:
             self.kM += -PAS_M
         elif keycode == wx.WXK_RIGHT:
-            self.kM += PAS_M   
+            self.kM += PAS_M    
+        elif keycode == wx.WXK_ESCAPE and self.pleinEcran:
+            self.commandePleinEcran(event)
+        event.Skip()
             
 
 
@@ -1424,38 +1494,38 @@ class Torseur3D(wx.Frame):
         return
     
     ###########################################################################
+    def getManuelTorseur(self, tors):
+
+        tors = self.saisie.tors
+#        tors.setElementsRed(self.torsO)
+#        tors.R.z = self.kR
+#        tors.M.y = self.kM
+ 
+        return
+    
+    ###########################################################################
     def GetToolBar(self):
         # You will need to override GetToolBar if you are using an
         # unmanaged toolbar in your frame
         return self.toolbar
 
-     
+    ###########################################################################
+    def onVar(self, evt):
+        self.saisie.OnVar(evt)
+        self.onTimer(evt)
         
     ###########################################################################
     def onTimer(self, evt):
         """ Tout ce qui est fait par cycle ...
         """
-        
+#        print "onTimer"
         if self.pause:
             return
         
         self.getTorseur(self.torsO)
         
-        
-#        
-#        if self.InterfaceDAQ.estOk():
-#            tors = self.InterfaceDAQ.getTorseur()
-#        else:
-#            self.T += 0.1
-#            if TYPE_DEMO == 0:
-#                tors = self.getRandomTorseur()
-#            else:
-#                tors = self.getClavierTorseur()
-#        
-#        self.torsO = tors
-        
         self.tors = self.torsO.getCopy(self.tors.P)
-        
+
         self.nb.GetCurrentPage().actualiser(self.tors, self.torsO)
         
         self.panelResultante.actualiser(self.tors.R)
@@ -1477,7 +1547,7 @@ class Torseur3D(wx.Frame):
 
     def OnPointRedModified(self):
         self.nb.GetCurrentPage().miseAJourPtRed(self.tors.P)
-        
+        self.onTimer(None)
         
 #        self.tors.changerPtRed(self.panelPointRed.P)
     
@@ -1505,9 +1575,10 @@ class Torseur3D(wx.Frame):
 #############################################################################################################
 #############################################################################################################
 class PanelTorseurs(wx.Panel):
-    def __init__(self, parent,app):
+    def __init__(self, parent, app):
         wx.Panel.__init__(self, parent, -1)
         
+        self.app = app
         
         #
         # Les vecteurs à tracer
@@ -1521,10 +1592,10 @@ class PanelTorseurs(wx.Panel):
         self.tracerAxeCentral = False
         
         #
-        # Le type d'affichage simple vue ou multiple vues
+        # Le type d'affichage simple vue ou multiples vues
         #
         multi = False
-        
+        self.multi = multi
         
         #
         # La figure Matplotlib
@@ -1543,7 +1614,7 @@ class PanelTorseurs(wx.Panel):
         #
         # La barre d'outils
         #
-        self.toolbar = NavigationToolbar2Wx(self.canvas)
+        self.toolbar = MyCustomToolbar(self.canvas, self)
         self.toolbar.Realize()
         # On Windows, default frame size behaviour is incorrect
         # you don't need this under Linux
@@ -1609,14 +1680,14 @@ class PanelTorseurs(wx.Panel):
 #        sizerbas.Fit()
         
         #
-        # La zone de tracé
+        # Mise en place
         #
         sizer = wx.BoxSizer(wx.VERTICAL)   
         sizer.Add(self.canvas, 1, wx.LEFT|wx.TOP|wx.GROW)
         sizer.Add(self.toolbar, 0, wx.GROW)
         sizer.Add(sizerbas, 0, wx.GROW)
         self.SetSizer(sizer)
-        self.multi = multi
+        
         
 #        self.canvas.draw()
 #        wx.CallAfter(self.calculerMargesFigure)
@@ -1626,7 +1697,47 @@ class PanelTorseurs(wx.Panel):
         
         
     ######################################################################################################
-    def InitDraw(self, multi):    
+    def setLimites(self, multi):
+        """ Applique les limites à tous les axes visibles
+        """
+        if multi:
+            # limites des axes 2D
+            self.axes['f'].set_xlim(LIMITE_Y0, LIMITE_Y1)
+            self.axes['f'].set_ylim(LIMITE_Z0, LIMITE_Z1)
+            self.axes['g'].set_xlim(LIMITE_X0, LIMITE_X1)
+            self.axes['d'].set_ylim(LIMITE_X1, LIMITE_X0)
+        
+        self.ax.set_xlim3d(LIMITE_X0, LIMITE_X1)
+        self.ax.set_ylim3d(LIMITE_Y0, LIMITE_Y1)
+        self.ax.set_zlim3d(LIMITE_Z0, LIMITE_Z1)
+        
+        
+    ######################################################################################################
+    def setEchelles(self, multi):
+        """ Applique les échelles aux vecteurs
+        """
+        m = 1
+        if multi:
+            m = 2
+            for vue in self.vues:        
+                self.vectRO[vue].setEchelle(ECHELLE_R/m)
+                self.vectMO[vue].setEchelle(ECHELLE_M/m)
+                
+        self.vectResultante.setEchelle(ECHELLE_R/m)
+        self.vectResultanteO.setEchelle(ECHELLE_R/m)
+        self.vectMoment.setEchelle(ECHELLE_M/m)
+        self.vectMomentO.setEchelle(ECHELLE_M/m)
+        
+        
+        
+        
+    ######################################################################################################
+    def InitDraw(self, multi):
+        """ Initialise les axes
+            (pour un passage de 1 à 4 vues)
+        """
+        
+        
         if multi:
             self.vues = ['f', 'g', 'd']
             self.axes = {}
@@ -1660,12 +1771,6 @@ class PanelTorseurs(wx.Panel):
             self.ax = self.fig.add_subplot(224, projection='3d')
             self.fig.axes.pop()
             
-            # limites des axes
-            self.axes['f'].set_xlim(LIMITE_Y0, LIMITE_Y1)
-            self.axes['f'].set_ylim(LIMITE_Z0, LIMITE_Z1)
-            self.axes['g'].set_xlim(LIMITE_X0, LIMITE_X1)
-            self.axes['d'].set_ylim(LIMITE_Y1, LIMITE_Y0)
-            
             # Taille des caractères
             setp(self.axes['f'].get_xaxis().get_ticklabels(), fontsize = TAILLE_TICKS/2)
             setp(self.axes['g'].get_xaxis().get_ticklabels(), fontsize = TAILLE_TICKS/2)
@@ -1688,19 +1793,14 @@ class PanelTorseurs(wx.Panel):
             setp(self.ax.w_yaxis.get_ticklabels(), fontsize=TAILLE_TICKS)
             setp(self.ax.w_zaxis.get_ticklabels(), fontsize=TAILLE_TICKS)
             self.fig.subplots_adjust(left=0, bottom=0, right=1, top=1)
-        
-        
                                                        
-        self.ax.set_xlabel('X', x = 0, y = 0)
-        self.ax.set_ylabel('Y')
-        self.ax.set_zlabel('Z')
+        self.ax.set_xlabel('x', x = 0, y = 0)
+        self.ax.set_ylabel('y')
+        self.ax.set_zlabel('z')
+        
+        self.setLimites(multi)
         
         self.ax.set_autoscale_on(False)
-        self.ax.set_xlim3d(LIMITE_X0, LIMITE_X1)
-        self.ax.set_ylim3d(LIMITE_Y0, LIMITE_Y1)
-        self.ax.set_zlim3d(LIMITE_Z0, LIMITE_Z1)
-        
-        
         
         if multi:
             self.vectR = {}
@@ -1758,23 +1858,31 @@ class PanelTorseurs(wx.Panel):
         self.pointOrig.draw(multi = multi)
         self.pointRed.draw(multi = multi)
         
+        self.miseAJourPtRed(self.app.tors.P)
 #        for ax in self.fig.axes:
 #            ax.callbacks.connect('xlim_changed', self.OnLimChanged)
 #            ax.callbacks.connect('ylim_changed', self.OnLimChanged)
         
     ######################################################################################################
     def MisesAJourMarges(self):    
+        
         self.pointOrig.decaleTexte()
         self.pointRed.decaleTexte()
         for vue in self.vues:
             self.pointR[vue].decaleTexte()
             self.pointO[vue].decaleTexte()
+#        
+        self.canvas.Freeze()
         self.canvas.draw()
         self.calculerMargesFigure()
-        
+        self.canvas.Thaw()
+#        
+#        self.canvas.draw()
+        return
         
     ######################################################################################################
     def OnLimChanged(self, event):
+#        print "OnLimChanged"
         event.Skip()
         if self.multi:
             wx.CallAfter(self.MisesAJourMarges)
@@ -1855,17 +1963,22 @@ class PanelTorseurs(wx.Panel):
     
     ######################################################################################################
     def EvtRadioBox(self, event):
-        if event.GetInt() == 0:
-            self.multi = False
-        else:
-            self.multi = True
-            
+        self.multi = event.GetInt() != 0
+        
         self.fig.clf(keep_observers = True)
         self.InitDraw(self.multi)
         
         if self.multi:
-            wx.CallAfter(self.MisesAJourMarges)
-            
+            self.MisesAJourMarges()
+        
+        self.actualiser(self.app.tors, self.app.torsO)
+        
+#        wx.CallAfter(self.zoneOptions.Refresh)
+        
+#        if self.multi:
+#            wx.CallAfter(self.MisesAJourMarges)
+#        else:
+#            self.canvas.draw()
         
         
     ######################################################################################################
@@ -1890,23 +2003,68 @@ class PanelTorseurs(wx.Panel):
         
         
     def drawNouvLimites(self):
-        self.ax.set_xlim3d(LIMITE_X0, LIMITE_X1)
-        self.ax.set_ylim3d(LIMITE_Y0, LIMITE_Y1)
-        self.ax.set_zlim3d(LIMITE_Z0, LIMITE_Z1)
+        self.setLimites(self.multi)
+        self.setEchelles(self.multi)
         
-        self.vectResultante.setEchelle(ECHELLE_R)
-        self.vectResultanteO.setEchelle(ECHELLE_R)
-        self.vectMoment.setEchelle(ECHELLE_M)
-        self.vectMomentO.setEchelle(ECHELLE_M)
+        if hasattr(self, 'tors'):
+            self.vectResultante.draw(o = self.tors.P, multi = self.multi)
+            self.vectMoment.draw(o = self.tors.P, multi = self.multi)
         
-        self.vectResultante.draw(o = self.tors.P, multi = self.multi)
-        self.vectMoment.draw(o = self.tors.P, multi = self.multi)
-    
         if self.tracerActionOrig:
             self.vectResultanteO.draw(multi = self.multi)
             self.vectMomentO.draw(multi = self.multi)
             
+        if self.multi:
+            for vue in self.vues:        
+                self.vectRO[vue].setComp(self.torsO.R)
+                self.vectRO[vue].draw()
+                
+                self.vectMO[vue].setComp(self.torsO.M)
+                self.vectMO[vue].draw()
+        
+        if self.tracerAxeCentral:
+            for vue in self.vues:
+                self.pointO[vue].draw(vect = [self.vectRO[vue],self.vectMO[vue]] )             
+            
         self.canvas.draw()
+        
+    def zoomTout(self):
+        global LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
+        xr, yr, zr = self.vectResultante.get_data_lim()
+        xm, ym, zm = self.vectMoment.get_data_lim()
+        xp, yp, zp = self.pointRed.get_data_lim()
+        x0, y0, z0 = self.pointOrig.get_data_lim()
+        
+        if self.tracerActionOrig:
+            xr0, yr0, zr0 = self.vectResultanteO.get_data_lim()
+            xm0, ym0, zm0 = self.vectMomentO.get_data_lim()
+        else:
+            xr0, yr0, zr0 = [], [], []
+            xm0, ym0, zm0 = [], [], []
+            
+        x = xr + xm + xp + xr0 + xm0 + x0
+        y = yr + ym + yp + yr0 + ym0 + y0
+        z = zr + zm + zp + zr0 + zm0 + z0
+        
+        LIMITE_X0 = min(x)
+        LIMITE_Y0 = min(y)
+        LIMITE_Z0 = min(z)
+        LIMITE_X1 = max(x)
+        LIMITE_Y1 = max(y)
+        LIMITE_Z1 = max(z)
+        
+        dx, dy, dz = LIMITE_X1-LIMITE_X0, LIMITE_Y1-LIMITE_Y0, LIMITE_Z1-LIMITE_Z0
+        r = 10
+        ex, ey, ez = max(5, dx/r), max(5, dy/r), max(5, dz/r)
+        
+        LIMITE_X0 = LIMITE_X0 - ex
+        LIMITE_Y0 = LIMITE_Y0 - ey
+        LIMITE_Z0 = LIMITE_Z0 - ez
+        LIMITE_X1 = LIMITE_X1 + ex
+        LIMITE_Y1 = LIMITE_Y1 + ey
+        LIMITE_Z1 = LIMITE_Z1 + ez
+        
+        self.drawNouvLimites()
         
     ######################################################################################################
     def OnEnter(self, event = None):
@@ -1941,6 +2099,8 @@ class PanelTorseurs(wx.Panel):
         ECHELLE_M = ECHELLE_M*coef
         
         self.drawNouvLimites()
+        
+            
         
         
     #########################################################################################################
@@ -2013,7 +2173,10 @@ class PanelTorseurs(wx.Panel):
         
         self.axeCentral.set_visible(self.tracerAxeCentral)
             
+        self.actualiser(self.tors, self.torsO)
+        
         self.canvas.draw()
+        
         
 #    #########################################################################################################
 #    def miseAJourPtRed(self, P):
@@ -2033,22 +2196,22 @@ class PanelTorseurs(wx.Panel):
     #########################################################################################################
     def actualiser(self, tors, torsO = None):
         
-#        def getAncres(vect):
-#            if vect.z > 0 :
-#                av1 = 'top'
-#                av2 = 'bottom'
-#            else:
-#                av2 = 'top'
-#                av1 = 'bottom'
-#                
-#            if vect.x > 0:
-#                ah1 = 'left'
-#                ah2 = 'right'
-#            else:
-#                ah1 = 'right'
-#                ah2 = 'left'
-#                
-#            return [ah1, av1], [ah2, av2]
+        def getAncres(vect):
+            if vect.z > 0 :
+                av1 = 'top'
+                av2 = 'bottom'
+            else:
+                av2 = 'top'
+                av1 = 'bottom'
+                
+            if vect.x > 0:
+                ah1 = 'left'
+                ah2 = 'right'
+            else:
+                ah1 = 'right'
+                ah2 = 'left'
+                
+            return [ah1, av1], [ah2, av2]
         
         self.vectResultante.setComp(tors.R)
         self.vectResultante.draw( o = tors.P, multi = self.multi)
@@ -2086,12 +2249,18 @@ class PanelTorseurs(wx.Panel):
                 for vue in self.vues:
                     self.axeC[vue].setComp(tors.getAxeCentral())
                     self.axeC[vue].draw()
-                    
+#                    
                     
         
         self.tors = tors
+        self.torsO = torsO
         
         self.canvas.draw()
+
+
+
+
+
 #        self.OnEnter()
 #        self.Refresh()
 
@@ -3113,6 +3282,30 @@ class DCPlus(wx.BufferedDC):
         self.SetBrush(brush)
 #        lstpoint[0] = LocToGlob(lstpoint[0], wx.Point(lf, 0), sinA, cosA)
 
+
+class MyCustomToolbar(NavigationToolbar2Wx): 
+    ID_ZOOM_TOUT = wx.NewId()
+    def __init__(self, plotCanvas, panel):
+        # create the default toolbar
+        NavigationToolbar2Wx.__init__(self, plotCanvas)
+        
+        self.panel = panel
+        
+        # remove the unwanted button
+        POSITION_OF_CONFIGURE_SUBPLOTS_BTN = 6
+        self.DeleteToolByPos(POSITION_OF_CONFIGURE_SUBPLOTS_BTN)
+        
+        bmp = wx.Bitmap("zoomtout.png")
+#        bmp = wx.ArtProvider.GetBitmap(wx.ART_PASTE, wx.ART_TOOLBAR, (20,20))
+        self.AddSimpleTool(self.ID_ZOOM_TOUT, bmp,
+                           u"Zomm au mieux", u"Zomm au mieux")
+        wx.EVT_TOOL(self, self.ID_ZOOM_TOUT, self.zoomTout)
+        
+    def zoomTout(self, evt):
+        self.panel.zoomTout()
+    
+       
+        
         
 def mm2m(a):  
     return a*0.001     

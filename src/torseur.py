@@ -31,7 +31,7 @@ Modèle mathématique d'un torseur d'action mécanique
 Copyright (C) 2009 Cédrick FAURY
 
 """
-from CedWidgets import strSc, strRound
+from widgets import strSc, strRound
 import wx
 from numpy import sqrt
 
