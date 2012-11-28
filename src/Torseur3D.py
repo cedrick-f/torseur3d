@@ -1117,50 +1117,9 @@ class Torseur3D(wx.Frame):
         print self.options
         
         self.pause = False
-        
-        #
-        # Ouverture de l'interface d'acquisition
-        #
-        print DAQ.PORT
-        if DAQ.PORT == '':
-            dlg = wx.MessageDialog(None, u"Veuillez sélectionner le port série "\
-                                         u"sur lequel est connecté le banc.",
-                                   u'Choix du port série',
-                                   wx.OK | wx.ICON_INFORMATION
-                                   #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
-                                   )
-            dlg.ShowModal()
-            dlg.Destroy()
-            self.onOptions(page = 0)
             
-        print "Port :",DAQ.PORT
-        
-        self.InterfaceDAQ = InterfaceAcquisition()
-        if not self.InterfaceDAQ.estOk():
-            dlg = wx.MessageDialog(None, u'Il faut un port série pour utiliser Torseur3D\n\n' \
-                                         u'Mode "Démo" !!',
-                               u'Pas de port série',
-                               wx.OK | wx.ICON_ERROR 
-                               #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
-                               )
-            dlg.ShowModal()
-            dlg.Destroy()
-            t = u"Mode Démo"
-            self.kR = 0.0
-            self.kM = 0.0
-            if TYPE_DEMO == 0:
-                self.getTorseur = self.getRandomTorseur
-            else:
-                self.getTorseur = self.getManuelTorseur
-        else:
-            t = self.InterfaceDAQ.port
-            self.getTorseur = self.InterfaceDAQ.getTorseur
-        self.SetTitle("Torseur 3D "+VERSION+" - "+t)    
-        
-        
         self.pleinEcran = False
         self.makeTB()
-        
         
         
         #
@@ -1195,11 +1154,6 @@ class Torseur3D(wx.Frame):
         self.panelCommande.SetMinSize(size)
         self.panelCommande.SetMaxSize(size)
         
-        if self.getTorseur != self.getManuelTorseur:
-            btn = wx.Button(self.panelCommande, -1, u"&Tarer")
-            self.Bind(wx.EVT_BUTTON, self.onTarer, btn)
-            psizer.Add(btn, flag = wx.EXPAND|wx.ALL, border = 3)
-        
         vsizer = wx.BoxSizer(wx.HORIZONTAL)
         self.panelResultante = VecteurPanel(self.panelCommande, nom = r"$\vec{R}$", 
                                             titre = u"Résultante (N)", useMPL = True, nc = PRECISION_R)
@@ -1219,33 +1173,14 @@ class Torseur3D(wx.Frame):
         psizer.Add(self.imgTorseur, flag = wx.EXPAND|wx.ALL, border = 3)
         psizer.Add(self.panelPointRed, flag = wx.EXPAND|wx.ALL, border = 3)
         
-        if self.getTorseur != self.getManuelTorseur:
-            btnP = wx.ToggleButton(self.panelCommande, -1, u"&Pause")
-            self.Bind(wx.EVT_TOGGLEBUTTON, self.onPause, btnP)
-            self.boutonPause = btnP
-            psizer.Add(btnP, flag = wx.EXPAND|wx.ALL, border = 3)
-
         
-        if self.getTorseur != self.getManuelTorseur:
-            #
-            # Initialisation du Timer qui lit sur le port
-            #
-            periode = PERIODE
-            if DEBUG: periode = periode * 5
-            self.t = wx.Timer(self, TIMER_ID)
-            self.t.Start(periode)
-            wx.EVT_TIMER(self, TIMER_ID, self.onTimer)
-        else:
-            self.saisie = InterfaceSaisie(self.panelCommande, ECHELLE_R, ECHELLE_M)
-            psizer.Add(self.saisie, flag = wx.EXPAND|wx.ALL, border = 3)
-            self.saisie.Bind(EVT_VAR_CTRL, self.onVar)
-       
+
         #
-        # Bouton "Options"
+        # Panel de saisie
         #
-        btnO = wx.Button(self.panelCommande, -1, u"&Options")
-        self.Bind(wx.EVT_BUTTON, self.onOptions, btnO)
-        psizer.Add(btnO, flag = wx.EXPAND|wx.ALL, border = 3)
+        self.saisie = InterfaceSaisie(self.panelCommande, ECHELLE_R, ECHELLE_M)
+        psizer.Add(self.saisie, flag = wx.EXPAND|wx.ALL, border = 3)
+        self.saisie.Bind(EVT_VAR_CTRL, self.onVar)
             
         #
         # Mise en place
@@ -1258,8 +1193,11 @@ class Torseur3D(wx.Frame):
         self.Fit()
          
         wx.EVT_CLOSE(self, self.onClose)
-#        wx.EVT_KEY_DOWN(self, self.onKey)
+        wx.EVT_KEY_DOWN(self, self.onKey)
         self.SetFocus()
+        
+        self.acquisition = True
+        self.commandeAcquisition()
         
         self.onTarer()
     
@@ -1276,18 +1214,103 @@ class Torseur3D(wx.Frame):
                               u"Plein écran", u"Plein écran")
         self.Bind(wx.EVT_TOOL, self.commandePleinEcran, id=10)
         
+        self.tb.AddCheckLabelTool(11, u"", wx.Bitmap("Icone_acquisition.png"), 
+                                  shortHelp=u"Acquisition")
+        self.Bind(wx.EVT_TOOL, self.commandeAcquisition, id=11)
+        
+        self.tb.AddSimpleTool(12, wx.Bitmap("Icone_tarer.png"), 
+                                  u"Tarer", u"Tarer")
+        self.Bind(wx.EVT_TOOL, self.onTarer, id=12)
+
+        self.boutonPause = self.tb.AddCheckTool(13, wx.Bitmap("Icone_pause.png"), 
+                                                     shortHelp=u"Pause")
+        self.Bind(wx.EVT_TOOL, self.onPause, id=13)
+        
+        #
+        # Bouton "Options"
+        #
+        self.tb.AddSimpleTool(14, wx.Bitmap("Icone_option.png"), 
+                                                 u"Options")
+        self.Bind(wx.EVT_TOOL, self.onOptions, id=14)
+        
+    
+            
         self.tb.Realize()
+        
+        
+    ###############################################################################################
+    def commandeAcquisition(self, event = None):    
+        self.acquisition = not self.acquisition
+        
+        if self.acquisition :
+            #
+            # Ouverture de l'interface d'acquisition
+            #
+            print DAQ.PORT
+            if DAQ.PORT == '':
+                dlg = wx.MessageDialog(None, u"Veuillez sélectionner le port série "\
+                                             u"sur lequel est connecté le banc.",
+                                       u'Choix du port série',
+                                       wx.OK | wx.ICON_INFORMATION
+                                       #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                                       )
+                dlg.ShowModal()
+                dlg.Destroy()
+                self.onOptions(page = 0)
+                
+            print "Port :",DAQ.PORT
+            
+            self.InterfaceDAQ = InterfaceAcquisition()
+            if not self.InterfaceDAQ.estOk():
+                dlg = wx.MessageDialog(None, u'Il faut un port série pour utiliser Torseur3D\n\n' \
+                                             u'Mode "Démo" !!',
+                                   u'Pas de port série',
+                                   wx.OK | wx.ICON_ERROR 
+                                   #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                                   )
+                dlg.ShowModal()
+                dlg.Destroy()
+                t = u"Mode Démo"
+                self.kR = 0.0
+                self.kM = 0.0
+                self.getTorseur = self.getRandomTorseur
+            else:
+                t = self.InterfaceDAQ.port
+                self.getTorseur = self.InterfaceDAQ.getTorseur
+        
+        else:
+            t = u"Mode manuel"
+            self.kR = 0.0
+            self.kM = 0.0
+            self.getTorseur = self.getManuelTorseur
+        
+        self.SetTitle("Torseur 3D "+VERSION+" - "+t)    
+        
+        if self.getTorseur != self.getManuelTorseur:
+            #
+            # Initialisation du Timer qui lit sur le port
+            #
+            periode = PERIODE
+            if DEBUG: periode = periode * 5
+            self.t = wx.Timer(self, TIMER_ID)
+            self.t.Start(periode)
+            wx.EVT_TIMER(self, TIMER_ID, self.onTimer)
+            self.saisie.Show(False)
+        else:
+            if hasattr(self, 't'):
+                self.t.Stop()
+            self.saisie.MiseAJour(self.torsO)
+            self.saisie.Show()
         
     ###############################################################################################
     def commandePleinEcran(self, event):
         self.pleinEcran = not self.pleinEcran
         if self.pleinEcran:
             win = self.nb.GetCurrentPage()
-            self.fsframe = wx.Frame(None, -1)
+            self.fsframe = wx.Frame(self, -1)
             win.Reparent(self.fsframe)
-            win.Bind(wx.EVT_KEY_DOWN, self.onKey)
-            self.fsframe.Show()
-#            self.fsframe.ShowFullScreen(True, style=wx.FULLSCREEN_ALL)
+            win.canvas.Bind(wx.EVT_KEY_DOWN, self.onKey)
+            self.fsframe.ShowFullScreen(True, style=wx.FULLSCREEN_ALL)
         else:
             win = self.fsframe.GetChildren()[0]
             win.Reparent(self.nb)
@@ -1388,7 +1411,6 @@ class Torseur3D(wx.Frame):
     ##########################################################################
     def onKey(self, event = None):
         keycode = event.GetKeyCode()
-        print "onKey"
         try:
             keyname = chr(keycode)
         except:
@@ -1419,7 +1441,8 @@ class Torseur3D(wx.Frame):
 
     ##########################################################################
     def onTarer(self, event = None):
-        self.InterfaceDAQ.tarer()
+        if hasattr(self, 'InterfaceDAQ'):
+            self.InterfaceDAQ.tarer()
         self.pagePyStatic.onTarer()
 #        self.SetFocus()
     
@@ -1428,14 +1451,21 @@ class Torseur3D(wx.Frame):
         self.pause = not self.pause
         if self.pause:
             print "Pause"
-            self.t.Stop()
-            self.nb.GetCurrentPage().OnPause(self.pause)
-            self.boutonPause.SetLabel(u"Reprise")
+            if self.acquisition:
+                self.t.Stop()
+                self.nb.GetCurrentPage().OnPause(self.pause)
+            self.boutonPause.SetShortHelp(u"Reprise")
+            self.boutonPause.SetNormalBitmap(wx.Bitmap("Icone_play.png"))
+            self.tb.Realize()
         else:
             print "Reprise"
-            self.t.Start()
-            self.nb.GetCurrentPage().OnPause(self.pause)
-            self.boutonPause.SetLabel(u"Pause")
+            if self.acquisition:
+                self.t.Start()
+                self.nb.GetCurrentPage().OnPause(self.pause)
+            self.boutonPause.SetShortHelp(u"Pause")
+            self.boutonPause.SetNormalBitmap(wx.Bitmap("Icone_pause.png"),)
+        event.Skip()
+        self.tb.Realize()
 #        self.SetFocus()
     
     ###########################################################################
@@ -2173,7 +2203,7 @@ class PanelTorseurs(wx.Panel):
         
         self.axeCentral.set_visible(self.tracerAxeCentral)
             
-        self.actualiser(self.tors, self.torsO)
+        self.actualiser(self.app.tors, self.app.torsO)
         
         self.canvas.draw()
         

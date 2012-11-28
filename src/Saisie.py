@@ -94,10 +94,27 @@ class InterfaceSaisie(wx.Panel):
         elif v.n == "N":
             self.tors.M.z = v.v[0]
         
+    ###########################################################################
+    def MiseAJour(self, torsO):
+        for i, c in enumerate(["X", "Y", "Z", "L", "M", "N"]):
+            if c == "X":
+                self.ctrl[i].variable.v[0] = torsO.R.x
+            elif c == "Y":
+                self.ctrl[i].variable.v[0] = torsO.R.y
+            elif c == "Z":
+                self.ctrl[i].variable.v[0] = torsO.R.z
+            elif c == "L":
+                self.ctrl[i].variable.v[0] = torsO.M.x
+            elif c == "M":
+                self.ctrl[i].variable.v[0] = torsO.M.y
+            elif c == "N":
+                self.ctrl[i].variable.v[0] = torsO.M.z
+            
+            self.ctrl[i].mofifierValeursSsEvt()
         
 #    ###########################################################################
 #    def getTorseur(self, tors):
-#        """ 
+#        """ (
 #        """
 #        print "getTorseur"
 #        print self.tors
