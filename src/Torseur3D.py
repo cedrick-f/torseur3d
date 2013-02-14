@@ -30,7 +30,7 @@ Affichage 3D de torseurs d'action mécanique
 Copyright (C) 2009 Cédrick FAURY
 
 """
-import sys, time
+import sys, os#, time
 
 import matplotlib
 matplotlib.use('WXAgg')
@@ -1059,8 +1059,10 @@ class MPLDroite2D(MPLDroite):
 class Torseur3D(wx.Frame):
 
     def __init__(self):
-        wx.Frame.__init__(self, None, -1, "")
+        wx.Frame.__init__(self, None, -1, "", size = (805,619))
         if DEBUG: print "Mode DEBUG"
+        
+        self.SetIcon(wx.Icon(os.path.join("Images", 'Torseur3D.ico')))
         
         #############################################################################################
         # Instanciation et chargement des options
@@ -1161,7 +1163,7 @@ class Torseur3D(wx.Frame):
         self.onTarer()
     
         self.Bind(wx.EVT_CLOSE, self.quitter)
-        self.SetSize((723,730))
+        self.SetSize((805,619))
     
     ############################################################################  
     def makeTB(self):
@@ -1169,26 +1171,26 @@ class Torseur3D(wx.Frame):
         tsize = (24,24)
         self.tb.SetToolBitmapSize(tsize)
         
-        self.tb.AddSimpleTool(10, wx.Bitmap("Icone_fullscreen.png"), 
+        self.tb.AddSimpleTool(10, wx.Bitmap(os.path.join("Images", "Icone_fullscreen.png")), 
                               u"Plein écran", u"Plein écran")
         self.Bind(wx.EVT_TOOL, self.commandePleinEcran, id=10)
         
-        self.tb.AddCheckLabelTool(11, u"", wx.Bitmap("Icone_acquisition.png"), 
+        self.tb.AddCheckLabelTool(11, u"", wx.Bitmap(os.path.join("Images", "Icone_acquisition.png")), 
                                   shortHelp=u"Acquisition")
         self.Bind(wx.EVT_TOOL, self.commandeAcquisition, id=11)
         
-        self.tb.AddSimpleTool(12, wx.Bitmap("Icone_tarer.png"), 
+        self.tb.AddSimpleTool(12, wx.Bitmap(os.path.join("Images", "Icone_tarer.png")), 
                                   u"Tarer", u"Tarer")
         self.Bind(wx.EVT_TOOL, self.onTarer, id=12)
 
-        self.boutonPause = self.tb.AddCheckTool(13, wx.Bitmap("Icone_pause.png"), 
+        self.boutonPause = self.tb.AddCheckTool(13, wx.Bitmap(os.path.join("Images", "Icone_pause.png")), 
                                                      shortHelp=u"Pause")
         self.Bind(wx.EVT_TOOL, self.onPause, id=13)
         
         #
         # Bouton "Options"
         #
-        self.tb.AddSimpleTool(14, wx.Bitmap("Icone_option.png"), 
+        self.tb.AddSimpleTool(14, wx.Bitmap(os.path.join("Images", "Icone_option.png")), 
                                                  u"Options")
         self.Bind(wx.EVT_TOOL, self.onOptions, id=14)
         
@@ -1416,7 +1418,7 @@ class Torseur3D(wx.Frame):
                 self.t.Stop()
                 self.nb.GetCurrentPage().OnPause(self.pause)
             self.boutonPause.SetShortHelp(u"Reprise")
-            self.boutonPause.SetNormalBitmap(wx.Bitmap("Icone_play.png"))
+            self.boutonPause.SetNormalBitmap(wx.Bitmap(os.path.join("Images", "Icone_play.png")))
             self.tb.Realize()
         else:
             print "Reprise"
@@ -1424,7 +1426,7 @@ class Torseur3D(wx.Frame):
                 self.t.Start()
                 self.nb.GetCurrentPage().OnPause(self.pause)
             self.boutonPause.SetShortHelp(u"Pause")
-            self.boutonPause.SetNormalBitmap(wx.Bitmap("Icone_pause.png"),)
+            self.boutonPause.SetNormalBitmap(wx.Bitmap(os.path.join("Images", "Icone_pause.png")),)
         event.Skip()
         self.tb.Realize()
 #        self.SetFocus()
@@ -3377,7 +3379,7 @@ class MyCustomToolbar(NavigationToolbar2Wx):
         POSITION_OF_CONFIGURE_SUBPLOTS_BTN = 6
         self.DeleteToolByPos(POSITION_OF_CONFIGURE_SUBPLOTS_BTN)
         
-        bmp = wx.Bitmap("zoomtout.png")
+        bmp = wx.Bitmap(os.path.join("Images", "zoomtout.png"))
 #        bmp = wx.ArtProvider.GetBitmap(wx.ART_PASTE, wx.ART_TOOLBAR, (20,20))
         self.AddSimpleTool(self.ID_ZOOM_TOUT, bmp,
                            u"Zoom au mieux", u"Zoom au mieux")

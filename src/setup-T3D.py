@@ -46,11 +46,17 @@ import shutil
 shutil.rmtree("build", ignore_errors=True)
 shutil.rmtree("bin", ignore_errors=True)
 
+# Inculsion des fichiers de données
+#################################################################################################
+# Fichiers MSVC
+data_files = [("Microsoft.VC90.CRT", glob(r'msvcr90.dll')), 
+              ("Microsoft.VC90.CRT", glob(r'Microsoft.VC90.CRT.manifest'))]
 # my setup.py is based on one generated with gui2exe, so data_files is done a bit differently
 # add the mpl mpl-data folder and rc file
 import matplotlib as mpl
-data_files = mpl.get_py2exe_datafiles()
+data_files.extend(mpl.get_py2exe_datafiles())
 data_files.extend(glob(r'*.png'))
+data_files.extend(glob(r'gpl.txt'))
 
 includes = []
 excludes = ['_gtkagg', '_tkagg', 'bsddb', 'curses', 'pywin.debugger',
@@ -65,12 +71,14 @@ dll_excludes = ['libgdk-win32-2.0-0.dll', 'libgobject-2.0-0.dll', 'tcl84.dll',
 
 
 setup(
-    console = ["Torseur3D.py"],
-    #name='Torseur_3D',
-    #~ version='0.5',
-#    zipfile=None,
-    data_files=data_files,
-    options = {"py2exe":
+#      console = ["Torseur3D.py"],
+      windows = [{"script" :"Torseur3D.py",
+                  "icon_resources":[(1, 'Torseur3D.ico')]
+                  }],
+      name='Torseur_3D',
+      version='1.1',
+      data_files = data_files,
+      options = {"py2exe":
                     {
                         "includes": includes,
                         "excludes": excludes,
@@ -81,6 +89,6 @@ setup(
                         "bundle_files": 3,
                         "optimize" : 2
                     }
-    },
+                 },
     
-)
+                 )

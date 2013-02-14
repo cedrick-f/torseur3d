@@ -33,6 +33,7 @@ Copyright (C) 2009 Cédrick FAURY
 """
 from widgets import strSc, strRound
 import wx
+import os
 from numpy import sqrt
 
 rapportUniteLong = {'m' : 1,
@@ -252,8 +253,8 @@ class Torseur():
         memDC.SetBackground(wx.WHITE_BRUSH)
 #        memDC.SetBackground(wx.Brush(wx.NullColour, style = wx.TRANSPARENT))#wx.Brush(bg
         memDC.Clear()
-        torseur = wx.Bitmap("Torseur.png", wx.BITMAP_TYPE_PNG)
-        crochet = wx.Bitmap("Crochet.png", wx.BITMAP_TYPE_PNG)
+        torseur = wx.Bitmap(os.path.join("Images", "Torseur.png"), wx.BITMAP_TYPE_PNG)
+        crochet = wx.Bitmap(os.path.join("Images", "Crochet.png"), wx.BITMAP_TYPE_PNG)
         crochet2 = crochet.ConvertToImage().Mirror().ConvertToBitmap()
         memDC.DrawBitmap(torseur, 0, yt, useMask = True)
         memDC.DrawBitmap(crochet, xc, yc, useMask = True)
