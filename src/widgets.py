@@ -717,6 +717,7 @@ class VariableCtrl(wx.Panel):
 
     #########################################################################################################
     def lstToText(self, lst):
+#        return " ".join(lst)
         s = ""
         for v in lst:
             s += str(v) + ' '

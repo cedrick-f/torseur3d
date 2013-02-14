@@ -59,7 +59,7 @@ class Options:
          
         self.typesOptions = {u"Général" : self.optGenerales,
                              u"Affichage" : self.optAffichage,
-                             u"Calibration" : self.optCalibration,
+                             u"Acquisition" : self.optCalibration,
                              }
         
         # Le fichier où seront sauvées les options
@@ -185,13 +185,13 @@ class FenOptions(wx.Dialog):
         #
         self.panelOptions = {u"Général" : pnlGenerales,
                              u"Affichage" : pnlAffichage,
-                             u"Calibration" : pnlCalibration,
+                             u"Acquisition" : pnlCalibration,
                              }
         #
         # Le book ...
         #
         nb = wx.Notebook(self, -1)
-        for nomOpt  in [u"Général", u"Affichage", u"Calibration"]:
+        for nomOpt  in [u"Général", u"Affichage", u"Acquisition"]:
             dicOpt = options.typesOptions[nomOpt]
             pnlOpt = self.panelOptions[nomOpt]
             nb.AddPage(pnlOpt(nb, dicOpt), nomOpt)
@@ -266,107 +266,26 @@ class pnlGenerales(wx.Panel):
         
         self.CreatePanel()
     
-        
     
     def CreatePanel(self):
         
         self.ns = wx.BoxSizer(wx.VERTICAL)
         
-        
-        #
-        # Port
-        #
-        sb3 = wx.StaticBox(self, -1, u"Port", size = (200,-1))
-        sbs3 = wx.StaticBoxSizer(sb3,wx.VERTICAL)
-        
-        # Option VAR_COMPLEXE
-        hs = wx.BoxSizer(wx.HORIZONTAL)
-        ttr = wx.StaticText(self, -1, u"Nom du port")
-        cb = wx.ComboBox(self, -1, self.opt["PORT"], size = (40, -1), 
-                         choices = ['COM1', 'COM2', 'COM3', 'COM4'],
-                         style = wx.CB_DROPDOWN|wx.CB_READONLY ,
-                         name = "")
-        
-        self.Bind(wx.EVT_COMBOBOX, self.EvtComboBox, cb)
-        hs.Add(ttr, flag = wx.ALIGN_CENTER_VERTICAL|wx.ALL, border = 4)
-        hs.Add(cb, flag = wx.ALIGN_CENTER_VERTICAL|wx.ALL, border = 4)
-        sbs3.Add(hs, flag = wx.EXPAND|wx.ALL, border = 5)
-        
-        self.ns.Add(sbs3, flag = wx.EXPAND|wx.ALL)
-        
-#        #
-#        # Choix du dossier de sauvegarde par défaut
-#        #
-#        sb1 = wx.StaticBox(self, -1, _(u"Dossier de sauvegarde par défaut"), size = (200,-1))
-#        sbs1 = wx.StaticBoxSizer(sb1,wx.VERTICAL)
-#        fs = DirSelectorCombo(self, -1)
-#        fs.SetValueWithEvent(self.opt["RepCourant"])
-#        fs.SetToolTip(wx.ToolTip(_(u"Permet de selectionner le dossier\n" \
-#                                   u"dans lequel seront sauvegardés les fichiers *.syl\n"\
-#                                   u"après le lancement de pySyLic.\n"\
-#                                   u"Par la suite, le dossier de sauvegarde proposé\n"\
-#                                   u"est le dernier dossier utilisé pour un enregistrement.")))
-#        sbs1.Add(fs, flag = wx.EXPAND|wx.ALL, border = 5)
-#        fs.Bind(wx.EVT_TEXT, self.EvtComboCtrl)
-#        self.ns.Add(sbs1, flag = wx.EXPAND|wx.ALL)
-#        
         #
         # Option "Type de mode démo"
         #
-        rb1 = wx.RadioBox(self, -1, u"Mode démo", wx.DefaultPosition, wx.DefaultSize,
-                          [u"aléatoire",u"clavier"], 
+        rb1 = wx.RadioBox(self, -1, u"Mode d'acquisition", wx.DefaultPosition, wx.DefaultSize,
+                          [u"Démo (aléatoire)",u"Manuel", u"Banc \"Torseur 3D (JEULIN)\""],#, u"Arduino"], 
                           1, wx.RA_SPECIFY_COLS)
+        rb1.SetToolTipString(u"Choix du mode d'acquisition des composantes du torseur :\n" \
+                             u"\tDémo = variation aléatoire\n" \
+                             u"\tManuel = saisie manuel\n")
         rb1.SetSelection(self.opt["TypeDemo"])
-#        rb1.SetToolTip(wx.ToolTip(_(u"Choisir la forme sous laquelle vous souhaitez saisir\n"\
-#                                    u"les polynômes des fonctions de transfert :\n"\
-#                                    u" - \"polynômes factorisés\" : fonction de transfert sous forme canonique\n"\
-#                                    u" - \"polynômes développés\" : saisie de chaque coefficient réel indépendamment\n"\
-#                                    u" - \"ajustement sur courbe\" : identification des paramètres à partir d'une courbe expérimentale")))
+
         self.Bind(wx.EVT_RADIOBOX, self.EvtRadioBox, rb1)
         self.ns.Add(rb1, flag = wx.EXPAND|wx.ALL)
-#        
-#        #
-#        # Apparence & Comportement
-#        #
-#        sb3 = wx.StaticBox(self, -1, _(u"Apparence et Comportement"), size = (200,-1))
-#        sbs3 = wx.StaticBoxSizer(sb3,wx.VERTICAL)
-#        
-#        # Option VAR_COMPLEXE
-#        hs = wx.BoxSizer(wx.HORIZONTAL)
-#        ttr = wx.StaticText(self, -1, _(u"Lettre pour la variable complexe :"))
-#        cb = wx.ComboBox(self, -1, self.opt["VAR_COMPLEXE"], size = (40, -1), 
-#                         choices = ['p', 's'],
-#                         style = wx.CB_DROPDOWN|wx.CB_READONLY ,
-#                         name = "VAR_COMPLEXE")
-#        help = _(u"Choisir la lettre utilisée pour désigner la variable complexe.")
-#        cb.SetToolTipString(help)
-#        ttr.SetToolTipString(help)
-#        self.Bind(wx.EVT_COMBOBOX, self.EvtComboBox, cb)
-#        hs.Add(ttr, flag = wx.ALIGN_CENTER_VERTICAL|wx.ALL, border = 4)
-#        hs.Add(cb, flag = wx.ALIGN_CENTER_VERTICAL|wx.ALL, border = 4)
-#        sbs3.Add(hs, flag = wx.EXPAND|wx.ALL, border = 5)
-#        
-#        # MAJ_AUTO
-#        cb2 = wx.CheckBox(self, -1, _(u"Mise à jour automatique des tracés"))
-#        cb2.SetToolTip(wx.ToolTip(_(u"Si cette case est cochée, les tracés sont mis à jour automatiquement\n"\
-#                                    u"à chaque modification de la Fonction de Transfert")))
-#        cb2.SetValue(self.opt["MAJ_AUTO"])
-#        self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxM, cb2)
-#        
-#        sbs3.Add(cb2, flag = wx.EXPAND|wx.ALL, border = 5)
-#        
-#        
-#        # DEPHASAGE
-#        cb3 = wx.CheckBox(self, -1, _(u'Ajouter la fonction "retard"'))
-#        cb3.SetToolTip(wx.ToolTip(_(u"Si cette case est cochée, il est possible d'ajouter la fonction \"retard\"\n"\
-#                                    u"à la Fonction de Transfert du processus")))
-#        cb3.SetValue(self.opt["DEPHASAGE"])
-#        self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBoxD, cb3)
-#        
-#        sbs3.Add(cb3, flag = wx.EXPAND|wx.ALL, border = 5)
-#        
-#        self.ns.Add(sbs3, flag = wx.EXPAND|wx.ALL)
-#        
+
+      
         #
         # Pas de modification torseur
         #
@@ -376,14 +295,14 @@ class pnlGenerales(wx.Panel):
                             lstVal = self.opt["PAS_R"], modeLog = False ,
                             typ = VAR_REEL, bornes = [0.1,1.0])
         vc1 = VariableCtrl(self, self.ncp, coef = 0.01, labelMPL = False, signeEgal = False,
-                          help = ""
+                          help = u"Pas (en N) de modification des composantes de résultantes (pour saisie manuelle)"
                           )
         self.Bind(EVT_VAR_CTRL, self.EvtVariableR, vc1)
         self.ncp = Variable(u'Moment', 
                             lstVal = self.opt["PAS_M"], modeLog = False,
                             typ = VAR_REEL, bornes = [0.01,0.1])
         vc2 = VariableCtrl(self, self.ncp, coef = 0.001, labelMPL = False, signeEgal = False,
-                          help = ""
+                          help = u"Pas (en Nm) de modification des composantes de moment (pour saisie manuelle)"
                           )
         self.Bind(EVT_VAR_CTRL, self.EvtVariableM, vc2)
         sbs3.Add(vc1, flag = wx.EXPAND|wx.ALL, border = 5)
@@ -391,6 +310,8 @@ class pnlGenerales(wx.Panel):
         self.ns.Add(sbs3, flag = wx.EXPAND|wx.ALL)
 #        
         self.SetSizerAndFit(self.ns)
+    
+    
     
     def EvtComboBox(self, event):
         cb = event.GetEventObject()
@@ -425,18 +346,7 @@ class pnlGenerales(wx.Panel):
     def EvtVariableM(self, event):
         self.opt["PAS_M"] = event.GetVar().v[0]
 
-#    def EvtCheckBoxOnglet(self, event):
-#        dlg = wx.MessageDialog(self, u"L'option ne sera effective qu'au redémarrage de l'application",
-#                               u'Option "Arbre de structure"',
-#                               wx.OK | wx.ICON_INFORMATION
-#                               #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
-#                               )
-#        dlg.ShowModal()
-#        dlg.Destroy()
-#        self.opt["OngletMontage"] = event.GetEventObject().GetValue()
-#        
-#    def EvtCheckBoxHachurer(self, event):
-#        self.opt["Hachurer"] = event.GetEventObject().GetValue()
+
 
 #############################################################################################################
 class pnlCalibration(wx.Panel):
@@ -454,6 +364,26 @@ class pnlCalibration(wx.Panel):
         
         self.ns = wx.BoxSizer(wx.VERTICAL)
         
+        #
+        # Port
+        #
+        sb3 = wx.StaticBox(self, -1, u"Communication", size = (200,-1))
+        sbs3 = wx.StaticBoxSizer(sb3,wx.VERTICAL)
+        
+        # Option VAR_COMPLEXE
+        hs = wx.BoxSizer(wx.HORIZONTAL)
+        ttr = wx.StaticText(self, -1, u"Nom du port série")
+        cb = wx.ComboBox(self, -1, self.opt["PORT"], size = (60, -1), 
+                         choices = ['COM1', 'COM2', 'COM3', 'COM4'],
+                         style = wx.CB_DROPDOWN|wx.CB_READONLY ,
+                         name = "")
+        cb.SetToolTipString(u"Port série sur lequel est relié le capteur")
+        self.Bind(wx.EVT_COMBOBOX, self.EvtComboBox, cb)
+        hs.Add(ttr, flag = wx.ALIGN_CENTER_VERTICAL|wx.ALL, border = 4)
+        hs.Add(cb, flag = wx.ALIGN_CENTER_VERTICAL|wx.ALL, border = 4)
+        sbs3.Add(hs, flag = wx.EXPAND|wx.ALL, border = 5)
+        
+        self.ns.Add(sbs3, flag = wx.EXPAND|wx.ALL)
         
         #
         # Coefficients
@@ -464,14 +394,17 @@ class pnlCalibration(wx.Panel):
                             lstVal = self.opt["Coef_R"], 
                             typ = VAR_REEL, bornes = [0.1,0.2])
         vcr = VariableCtrl(self, self.cr, coef = 1, labelMPL = False, signeEgal = False,
-                          help = "")
+                          help = u"Coefficients de conversion \"données capteur\"/\"force\"\n" \
+                            u"à régler pour l'étalonnage du capteur.")
+   
         self.Bind(EVT_VAR_CTRL, self.EvtVariableR, vcr)
         
         self.cm = Variable(u'Coefficient "Moment"', 
                             lstVal = self.opt["Coef_M"], 
                             typ = VAR_REEL, bornes = [0.01,0.02])
         vcm = VariableCtrl(self, self.cm, coef = 1, labelMPL = False, signeEgal = False,
-                          help = "")
+                          help = u"Coefficients de conversion \"données capteur\"/\"moment\"\n" \
+                            u"à régler pour l'étalonnage du capteur.")
         self.Bind(EVT_VAR_CTRL, self.EvtVariableM, vcm)
         
     
@@ -629,50 +562,7 @@ class pnlAffichage(wx.Panel):
         sbs3.Add(vc2, flag = wx.EXPAND|wx.ALL, border = 5)
         
         self.ns.Add(sbs3, flag = wx.EXPAND|wx.ALL)
-        
-        
-        
-        # 
-        # Performances
-        #
-#        sb3 = wx.StaticBox(self, -1, u"Performances"))
-#        sbs3 = wx.StaticBoxSizer(sb3, wx.VERTICAL)
-#        
-#        # ANTIALIASED
-#        cb2 = wx.CheckBox(self, -1, _(u"Lisser les courbes (antialiasing)"))
-#        cb2.SetToolTip(wx.ToolTip(_(u"En décochant cette case, l'affichage devrait être plus rapide")))
-#        cb2.SetValue(self.opt["ANTIALIASED"])
-#        
-#        sbs3.Add(cb2, flag = wx.EXPAND|wx.ALL, border = 5)
-#            
-#        # 
-#        # Polices de caractère
-#        #
-#        sb2 = wx.StaticBox(self, -1, _(u"Type de Police de caractère"))
-#        sbs2 = wx.StaticBoxSizer(sb2, wx.VERTICAL)
-#        
-#        lstBmp = [Images.TypeFont0.GetBitmap(), 
-#                  Images.TypeFont1.GetBitmap(), 
-#                  Images.TypeFont2.GetBitmap()]
-##        print self.opt["FONT_TYPE"],
-#        for i, bmp in enumerate(lstBmp):
-##            print i,
-#            sz = wx.BoxSizer(wx.HORIZONTAL)
-#            rb = wx.RadioButton(self, 100+i, "")
-#            sz.Add(rb, 0, wx.ALIGN_CENTER_VERTICAL|wx.ALL, 5)
-#            sz.Add(wx.StaticBitmap(self, -1, bmp), 0, wx.ALL, border = 5)
-#            if self.opt["FONT_TYPE"] == i:
-#                rb.SetValue(True)
-#            self.Bind(wx.EVT_RADIOBUTTON, self.OnRadio, rb )
-#            sbs2.Add(sz)
-#            
-#        
-#        self.ns.Add(sbs2, flag = wx.EXPAND)
-#        self.ns.Add(sbs3, flag = wx.EXPAND)
-#        
-#        self.Bind(wx.EVT_CHECKBOX, self.EvtCheckBox, cb2)
-#        self.Bind(EVT_VAR_CTRL, self.OnVariableModified)
-        
+
         self.SetSizerAndFit(self.ns)
         
     
@@ -709,44 +599,7 @@ class pnlAffichage(wx.Panel):
     def EvtVariablePM(self, event):
         self.opt["PRECISION_M"] = event.GetVar().v[0]
           
-#    def OnClick(self, event):
-#        # Nouveau
-#        if event.GetId() == 10: 
-#            frame = ElementTable.ElementGridFrame(self, Elements.listeElements, Elements.listeFamilles,
-#                                                  fichier = wx.GetApp().auteur)
-#        
-#        # Editer
-#        elif event.GetId() == 11:
-#            frame = ElementTable.ElementGridFrame(self, fichier = self.cb.GetValue())
-#        frame.Show(True)
-#        
-#        
-#    def SetFichier(self, fichier):
-#        self.opt["FichierProprietes"] = fichier
-#        self.cb.SetValue(self.opt["FichierProprietes"])
-#    
-#    
-#        
-#    
-#    def EvtRadioBox(self, event = None):
-#        if event != None:
-##            print "Radio",event.GetId()
-#            self.opt["ProprietesDefaut"] = event.GetId()
-#        
-#        if self.opt["ProprietesDefaut"] == 0:
-#            self.sb2.Enable(False)
-#            self.cb.Enable(False)
-#            self.b1.Enable(False)
-#            self.b2.Enable(False)
-#        else:
-#            self.sb2.Enable(True)
-#            self.cb.Enable(True)
-#            self.b1.Enable(True)
-#            self.b2.Enable(True)
-#        
-#    def EvtComboBox(self, event):
-#        self.opt["FichierProprietes"] = event.GetEventObject().GetValue()
-#        
+
 
 #############################################################################################################
 class pnlImpression(wx.Panel):

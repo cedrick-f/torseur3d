@@ -315,7 +315,7 @@ def getAncre(cadran):
 
 ################################################################################
 ################################################################################
-class MPLVecteur3D():
+class MPLVecteur():
     def __init__(self, axe, vect = None, coul = wx.Colour(0,0,0), nom = "", 
                  echelle = 1.0, visible = True, nc = 2):
         if vect == None:
@@ -330,10 +330,38 @@ class MPLVecteur3D():
         self.coul = coul
         self.nc = nc
         
+        self.comp_visible = True
+        self.valcomp_visible = True
+        self.nom_visible = True
+        
         self.initdraw(axe)
         
         self.set_visible(visible)
+
+    def setEchelle(self, echelle):
+        self.echelle = echelle
         
+    def set_visible(self, etat):
+        for a in self.artists:
+            a.set_visible(etat)
+        
+    def set_visible_nom(self, etat):
+        self.nom_visible = etat
+        for a in [self.text]:
+            a.set_visible(etat)
+            
+    def setComp(self, vect):
+        if not isinstance(vect, Vecteur):
+            vect = Vecteur(vect[0], vect[1], vect[2])
+        self.vect.setComp(vect)
+        
+################################################################################
+################################################################################
+class MPLVecteur3D(MPLVecteur):
+    def __init__(self, axe, vect = None, coul = wx.Colour(0,0,0), nom = "", 
+                 echelle = 1.0, visible = True, nc = 2):
+        
+        MPLVecteur.__init__(self, axe, vect, coul, nom, echelle, visible, nc)
         
     def getCadran(self, v = None):
         if v == None:
@@ -353,11 +381,6 @@ class MPLVecteur3D():
             else:
                 c = 2
         return c
-    
-        
-        
-    def setEchelle(self, echelle):
-        self.echelle = echelle
         
     def set_artist_data(self, art, x, y, z):
         for line in art:
@@ -480,18 +503,18 @@ class MPLVecteur3D():
         for a in self.arete:
             artists.append(a[0])
         artists.append(self.text)
+        artists.append(self.text_cx)
+        artists.append(self.text_cy)
+        artists.append(self.text_cz)
         self.artists = artists
     
         self.x = [0]
         self.y = [0]
         self.z = [0]
     
-    def set_visible(self, etat):
-        for a in self.artists:
-            a.set_visible(etat)
-            
             
     def set_visible_comp(self, etat):
+        self.comp_visible = etat
         lst = [self.comp_x[0], self.comp_y[0], self.comp_z[0]]
         for a in self.arete:
             lst.append(a[0])
@@ -499,50 +522,22 @@ class MPLVecteur3D():
             a.set_visible(etat)
             
     def set_visible_valcomp(self, etat):
+        self.valcomp_visible = etat
         for a in [self.text_cx, self.text_cy, self.text_cz]:
             a.set_visible(etat)
-            
-    def set_visible_nom(self, etat):
-        for a in [self.text]:
-            a.set_visible(etat)
-
-#    def remove(self):
-#        for a in self.artists:
-#            a.remove(etat)
-        
-            
-    def setComp(self, vect):
-        if not isinstance(vect, Vecteur):
-            vect = Vecteur(vect[0], vect[1], vect[2])
-        self.vect.setComp(vect)
+    
         
     def get_data_lim(self):
         return self.x, self.y, self.z
         
 ################################################################################
 ################################################################################
-class MPLVecteur2D():
+class MPLVecteur2D(MPLVecteur):
     def __init__(self, axe, vect = None, vue = 'f', coul = wx.Colour(0,0,0), nom = "", 
                  echelle = 1.0, visible = True, nc = 2):
-        if vect == None:
-            self.vect = Vecteur()
-            self.vect.setComp(vect)
-        else:
-            self.vect.vect
-            
-        self.nom = nom
-        self.id = str(getNewId())
-        self.echelle = echelle   
-        self.coul = coul
-        self.nc = nc
         self.vue = vue
-        
-        self.initdraw(axe)
-        
-        self.set_visible(visible)
-        
-    def setEchelle(self, echelle):
-        self.echelle = echelle
+        MPLVecteur.__init__(self, axe, vect, coul, nom, echelle, visible, nc)
+          
         
     def set_artist_data(self, art, x, y):
         for line in art:
@@ -580,21 +575,28 @@ class MPLVecteur2D():
                 
         
     def draw(self, o = ORIGINE):
+        
         if self.vue == 'f':
             _x = m2mm(o.y)
             _y = m2mm(o.z)
             p = Point(_x + self.vect.y*self.echelle,
                       _y + self.vect.z*self.echelle)
+            self.text_cx.set_text(strRound(self.vect.y, self.nc))
+            self.text_cy.set_text(strRound(self.vect.z, self.nc))
         elif self.vue == 'g':
             _x = m2mm(o.x)
             _y = m2mm(o.z)
             p = Point(_x + self.vect.x*self.echelle,
                       _y + self.vect.z*self.echelle)
+            self.text_cx.set_text(strRound(self.vect.x, self.nc))
+            self.text_cy.set_text(strRound(self.vect.z, self.nc))
         else: 
             _x = m2mm(o.y)
             _y = m2mm(o.x)
             p = Point(_x + self.vect.y*self.echelle,
                       _y + self.vect.x*self.echelle)
+            self.text_cx.set_text(strRound(self.vect.y, self.nc))
+            self.text_cy.set_text(strRound(self.vect.x, self.nc))
                 
         x = [_x, p.x]
         y = [_y, p.y]
@@ -608,7 +610,6 @@ class MPLVecteur2D():
         self.set_artist_data(self.comp_y, x0, y)
         
         ancre = getAncre(self.getCadran(composante = 'x'))
-        self.text_cx.set_text(strRound(self.vect.x, self.nc))
         self.text_cx.set_x(p.x)
         self.text_cx.set_y(_y)
         self.text_cx.set_size(TAILLE_COMPOSANTES/2)
@@ -616,17 +617,12 @@ class MPLVecteur2D():
         self.text_cx.set_verticalalignment(ancre[1])
         
         ancre = getAncre(self.getCadran(composante = 'y'))
-        self.text_cy.set_text(strRound(self.vect.y, self.nc))
         self.text_cy.set_x(_x)
         self.text_cy.set_y(p.y)
         self.text_cy.set_size(TAILLE_COMPOSANTES/2)
         self.text_cy.set_horizontalalignment(ancre[0])
         self.text_cy.set_verticalalignment(ancre[1])
-        
-        self.set_artist_data(self.arete[0], [p.x, p.x], y)
-        self.set_artist_data(self.arete[1], x, [p.y, p.y])
-        
-        
+    
         ancre = getAncre(self.getCadran())
         self.text.set_x(p.x)
         self.text.set_y(p.y)
@@ -634,7 +630,24 @@ class MPLVecteur2D():
         self.text.set_horizontalalignment(ancre[0])
         self.text.set_verticalalignment(ancre[1])
         
+        self.set_artist_data(self.arete[0], [p.x, p.x], y)
+        self.set_artist_data(self.arete[1], x, [p.y, p.y])
         
+        self.regleVisibilite()
+        
+        
+    def regleVisibilite(self):
+        lX = self.axe.get_xlim()
+        lY = self.axe.get_ylim()
+        lY = sorted(lY)
+        for txt, etat in zip([self.text, self.text_cx, self.text_cy], [self.nom_visible, self.valcomp_visible, self.valcomp_visible]):
+            X, Y = txt.get_position()
+            if X > lX[0] and X < lX[1] and Y > lY[0] and Y < lY[1]:
+                txt.set_visible(etat)
+            else:
+                txt.set_visible(False)
+    
+    
         
     def initdraw(self, axe):
         if self.vue == 'f':
@@ -673,15 +686,14 @@ class MPLVecteur2D():
         for a in self.arete:
             artists.append(a[0])
         artists.append(self.text)
+        artists.append(self.text_cx)
+        artists.append(self.text_cy)
         self.artists = artists
     
-    
-    def set_visible(self, etat):
-        for a in self.artists:
-            a.set_visible(etat)
             
             
     def set_visible_comp(self, etat):
+        self.comp_visible = etat
         lst = [self.comp_x[0], self.comp_y[0]]
         for a in self.arete:
             lst.append(a[0])
@@ -689,42 +701,26 @@ class MPLVecteur2D():
             a.set_visible(etat)
             
     def set_visible_valcomp(self, etat):
+        self.valcomp_visible = etat
         for a in [self.text_cx, self.text_cy]:
             a.set_visible(etat)
             
-    def set_visible_nom(self, etat):
-        for a in [self.text]:
-            a.set_visible(etat)
-
-#    def remove(self):
-#        for a in self.artists:
-#            a.remove(etat)
+   
         
-            
-    def setComp(self, vect):
-        if not isinstance(vect, Vecteur):
-            vect = Vecteur(vect[0], vect[1], vect[2])
-        self.vect.setComp(vect)
-        
-        
-            
 #############################################################################################################
-class MPLPoint3D():
+class MPLPoint():
     def __init__(self, axe, point = None, coul = wx.Colour(0,0,0), nom = "", 
                  echelle = 1.0, visible = True):
         if point == None:
             self.point = Point()
         else:
             self.point = point
-        
         self.coul = coul
         self.nom = u"  "+nom
         self.id = str(getNewId())
         self.initdraw(axe)
         
         self.set_visible(visible)
-        
-        
         
     def getAncre(self, lstvect):
         if lstvect == None or None in lstvect:
@@ -736,8 +732,32 @@ class MPLPoint3D():
         except:
             pass
         
-        return getAncre(c[0])
+        return getAncre(c[0])    
     
+    def set_visible(self, etat):
+        for a in self.artists:
+            a.set_visible(etat)
+            
+    def setComp(self, point):
+        if not isinstance(point, Point):
+            point = Point(point[0], point[1], point[2])
+        self.point = point
+        
+    def remove(self):
+        if self.axe == None:
+            return
+        self.pt[0].remove()
+        self.text.remove()
+    
+    
+        
+            
+#############################################################################################################
+class MPLPoint3D(MPLPoint):
+    def __init__(self, axe, point = None, coul = wx.Colour(0,0,0), nom = "", 
+                 echelle = 1.0, visible = True):
+        
+        MPLPoint.__init__(self, axe, point, coul, nom, echelle, visible)   
     
     
     def draw(self, o = ORIGINE, vect = None, multi = False):
@@ -802,20 +822,9 @@ class MPLPoint3D():
         
     
     
-    def remove(self):
-        if self.axe == None:
-            return
-        self.pt[0].remove()
-        self.text.remove()
+    
         
-    def set_visible(self, etat):
-        for a in self.artists:
-            a.set_visible(etat)
-            
-    def setComp(self, point):
-        if not isinstance(point, Point):
-            point = Point(point[0], point[1], point[2])
-        self.point = point
+    
         
         
     def get_data_lim(self):
@@ -824,35 +833,11 @@ class MPLPoint3D():
         
         
 #############################################################################################################
-class MPLPoint2D():
+class MPLPoint2D(MPLPoint):
     def __init__(self, axe, point = None, vue = 'f', coul = wx.Colour(0,0,0), nom = "", 
                  echelle = 1.0, visible = True):
-        if point == None:
-            self.point = Point()
-        else:
-            self.point = point
-        
-        self.coul = coul
-        self.nom = u"  "+nom
-#        self.nom = u"  "+nom+u"\u00A0"
         self.vue = vue
-        self.id = str(getNewId())
-        self.initdraw(axe)
-        
-        self.set_visible(visible)
-        
-        
-    def getAncre(self, lstvect):
-        if lstvect == None or None in lstvect:
-            return 'right', 'top'
-        c = [0, 1, 2, 3]
-        c.remove(lstvect[0].getCadran())
-        try:
-            c.remove(lstvect[1].getCadran())
-        except:
-            pass
-        
-        return getAncre(c[0])
+        MPLPoint.__init__(self, axe, point, coul, nom, echelle, visible)
         
         
     def draw(self, o = ORIGINE, vect = None):
@@ -869,17 +854,16 @@ class MPLPoint2D():
         self.pt[0].set_xdata([lx])
         self.pt[0].set_ydata([ly])
         
-        
         self.text.set_size(TAILLE_POINT/2)
         ancre = self.getAncre(vect)
         self.text.set_horizontalalignment(ancre[0])
         self.text.set_verticalalignment(ancre[1])
         self.text.set_x(lx)
         self.text.set_y(ly)
-        
         self.decaleTexte()
-            
         
+        self.regleVisibilite()
+            
     def decaleTexte(self):
         ancre = self.text.get_horizontalalignment()
         if ancre == 'right':
@@ -903,24 +887,19 @@ class MPLPoint2D():
         artists.append(self.text)
         self.artists = artists
     
-    def remove(self):
-        if self.axe == None:
-            return
-        self.pt[0].remove()
-        self.text.remove()
-        
-    def set_visible(self, etat):
-        for a in self.artists:
-            a.set_visible(etat)
-            
-    def setComp(self, point):
-        if not isinstance(point, Point):
-            point = Point(point[0], point[1], point[2])
-        self.point = point
-        
+    def regleVisibilite(self):
+        X, Y = self.pt[0].get_xdata()[0], self.pt[0].get_ydata()[0]
+        lX = self.axe.get_xlim()
+        lY = self.axe.get_ylim()
+        lY = sorted(lY) # à cause de la vue de dessus dont l'axe Y est inversé
+        if X > lX[0] and X < lX[1] and Y > lY[0] and Y < lY[1]:
+            self.set_visible(True)
+        else:
+            self.set_visible(False)
+
         
 #############################################################################################################
-class MPLDroite3D():
+class MPLDroite():
     def __init__(self, axe, droite = None, coul = wx.Colour(0,0,0), nom = "", 
                  echelle = 1.0, visible = True):
         self.droite = droite
@@ -928,8 +907,28 @@ class MPLDroite3D():
         self.nom = nom
         self.id = str(getNewId())
         self.initdraw(axe)
-        
         self.set_visible(visible)
+        
+    def set_visible(self, etat):
+        for a in self.artists:
+            a.set_visible(etat)
+            
+    def setComp(self, droite):
+        self.droite = droite
+        if self.droite != None:
+            self.droite.changeUnite('mm')
+    
+    def remove(self):
+        if self.axe == None:
+            return
+        self.dr[0].remove()
+        self.text.remove()
+            
+#############################################################################################################
+class MPLDroite3D(MPLDroite):
+    def __init__(self, axe, droite = None, coul = wx.Colour(0,0,0), nom = "", 
+                 echelle = 1.0, visible = True):
+        MPLDroite.__init__(self, axe, droite, coul, nom, echelle, visible)
         
         
     def draw(self):
@@ -974,37 +973,15 @@ class MPLDroite3D():
         artists.append(self.dr[0])
         self.artists = artists
     
-    def remove(self):
-        if self.axe == None:
-            return
-        self.dr[0].remove()
-        self.text.remove()
-        
-    def set_visible(self, etat):
-        for a in self.artists:
-            a.set_visible(etat)
-            
-    def setComp(self, droite):
-        self.droite = droite
-        if self.droite != None:
-            self.droite.changeUnite('mm')
-#        self.droite.P.x = m2mm(self.droite.P.x)
-#        self.droite.P.y = m2mm(self.droite.P.y)
-#        self.droite.P.z = m2mm(self.droite.P.z)
+    
         
 
 #############################################################################################################
-class MPLDroite2D():
+class MPLDroite2D(MPLDroite):
     def __init__(self, axe, droite = None, vue = 'f', coul = wx.Colour(0,0,0), nom = "", 
                  echelle = 1.0, visible = True):
-        self.droite = droite
-        self.coul = coul
-        self.nom = nom
         self.vue = vue
-        self.id = str(getNewId())
-        self.initdraw(axe)
-        
-        self.set_visible(visible)
+        MPLDroite.__init__(self, axe, droite, coul, nom, echelle, visible)
         
         
     def draw(self):
@@ -1073,23 +1050,7 @@ class MPLDroite2D():
         artists.append(self.dr[0])
         self.artists = artists
     
-    def remove(self):
-        if self.axe == None:
-            return
-        self.dr[0].remove()
-        self.text.remove()
-        
-    def set_visible(self, etat):
-        for a in self.artists:
-            a.set_visible(etat)
-            
-    def setComp(self, droite):
-        self.droite = droite
-        if self.droite != None:
-            self.droite.changeUnite('mm')
-#        self.droite.P.x = m2mm(self.droite.P.x)
-#        self.droite.P.y = m2mm(self.droite.P.y)
-#        self.droite.P.z = m2mm(self.droite.P.z)
+   
 ################################################################################
 #
 #   Fenetre principale 
@@ -1172,8 +1133,6 @@ class Torseur3D(wx.Frame):
         psizer.Add(self.imgTorseurO, flag = wx.EXPAND|wx.ALL, border = 3)
         psizer.Add(self.imgTorseur, flag = wx.EXPAND|wx.ALL, border = 3)
         psizer.Add(self.panelPointRed, flag = wx.EXPAND|wx.ALL, border = 3)
-        
-        
 
         #
         # Panel de saisie
@@ -1202,7 +1161,7 @@ class Torseur3D(wx.Frame):
         self.onTarer()
     
         self.Bind(wx.EVT_CLOSE, self.quitter)
-        
+        self.SetSize((723,730))
     
     ############################################################################  
     def makeTB(self):
@@ -1327,7 +1286,7 @@ class Torseur3D(wx.Frame):
         options.optCalibration["Coef_R"] = DAQ.COEF_R
         options.optCalibration["Coef_M"] = DAQ.COEF_M
         options.optGenerales["TypeDemo"] = TYPE_DEMO
-        options.optGenerales["PORT"] = DAQ.PORT
+        options.optCalibration["PORT"] = DAQ.PORT
         options.optGenerales["PAS_R"] = PAS_R
         options.optGenerales["PAS_M"] = PAS_M
         options.optAffichage["PRECISION_R"] = PRECISION_R
@@ -1390,10 +1349,12 @@ class Torseur3D(wx.Frame):
         self.options = options.copie()
         DAQ.COEF_R = self.options.optCalibration["Coef_R"]
         DAQ.COEF_M = self.options.optCalibration["Coef_M"]
-        DAQ.PORT = self.options.optGenerales["PORT"]
+        DAQ.PORT = self.options.optCalibration["PORT"]
+        
         TYPE_DEMO = self.options.optGenerales["TypeDemo"]
         PAS_R = options.optGenerales["PAS_R"]
         PAS_M = options.optGenerales["PAS_M"]
+        
         PRECISION_R = options.optAffichage["PRECISION_R"]
         PRECISION_M = options.optAffichage["PRECISION_M"]
         MODE_DEMARRAGE = options.optGenerales["MODE_DEMARRAGE"]
@@ -1608,6 +1569,7 @@ class PanelTorseurs(wx.Panel):
     def __init__(self, parent, app):
         wx.Panel.__init__(self, parent, -1)
         
+        
         self.app = app
         
         #
@@ -1622,6 +1584,12 @@ class PanelTorseurs(wx.Panel):
         self.tracerAxeCentral = False
         
         #
+        # Pour faire des Pan
+        #
+        self.panX, self.panY = None, None
+        self.panAx = None
+        
+        #
         # Le type d'affichage simple vue ou multiples vues
         #
         multi = False
@@ -1630,13 +1598,17 @@ class PanelTorseurs(wx.Panel):
         #
         # La figure Matplotlib
         #
-        self.fig = Figure((5,4), 75)
+        self.fig = Figure((5,5), 75)
         self.canvas = FigureCanvasWxAgg(self, -1, self.fig)
+        self.canvas.SetSize((400,400))
         self.InitDraw(multi)
         self.canvas.mpl_connect('scroll_event', self.OnWheel)
         self.canvas.mpl_connect('figure_enter_event', self.OnEnter)
         self.canvas.mpl_connect('pick_event', self.OnPick)
-        self.canvas.mpl_connect('draw_event', self.on_draw)
+        self.canvas.mpl_connect('button_press_event', self.OnPress)
+        self.canvas.mpl_connect('button_release_event', self.OnRelease)
+        self.canvas.mpl_connect('motion_notify_event', self.OnMotion)
+#        self.canvas.mpl_connect('draw_event', self.on_draw)
 #        self.canvas.mpl_connect('resize_event', self.OnLimChanged)
         
     
@@ -1713,7 +1685,7 @@ class PanelTorseurs(wx.Panel):
         # Mise en place
         #
         sizer = wx.BoxSizer(wx.VERTICAL)   
-        sizer.Add(self.canvas, 1, wx.LEFT|wx.TOP|wx.GROW)
+        sizer.Add(self.canvas, 1, wx.LEFT|wx.TOP|wx.EXPAND)
         sizer.Add(self.toolbar, 0, wx.GROW)
         sizer.Add(sizerbas, 0, wx.GROW)
         self.SetSizer(sizer)
@@ -1746,17 +1718,22 @@ class PanelTorseurs(wx.Panel):
     def setEchelles(self, multi):
         """ Applique les échelles aux vecteurs
         """
-        m = 1
         if multi:
-            m = 2
+            er = ECHELLE_R/2
+            em = ECHELLE_M/2
             for vue in self.vues:        
-                self.vectRO[vue].setEchelle(ECHELLE_R/m)
-                self.vectMO[vue].setEchelle(ECHELLE_M/m)
-                
-        self.vectResultante.setEchelle(ECHELLE_R/m)
-        self.vectResultanteO.setEchelle(ECHELLE_R/m)
-        self.vectMoment.setEchelle(ECHELLE_M/m)
-        self.vectMomentO.setEchelle(ECHELLE_M/m)
+                self.vectR[vue].setEchelle(er)
+                self.vectM[vue].setEchelle(em)
+                self.vectRO[vue].setEchelle(er)
+                self.vectMO[vue].setEchelle(em)
+        else:
+            er = ECHELLE_R
+            em = ECHELLE_M
+            
+        self.vectResultante.setEchelle(er)
+        self.vectResultanteO.setEchelle(er)
+        self.vectMoment.setEchelle(em)
+        self.vectMomentO.setEchelle(em)
         
         
         
@@ -1767,22 +1744,22 @@ class PanelTorseurs(wx.Panel):
             (pour un passage de 1 à 4 vues)
         """
         
-        
         if multi:
             self.vues = ['f', 'g', 'd']
             self.axes = {}
             m = 2
             # Face
-            self.axes['f'] = self.fig.add_subplot(221)
+            self.axes['f'] = self.fig.add_subplot(221, aspect='equal', adjustable = 'datalim', anchor = 'C')
             self.axes['f'].set_xlabel("y")
             self.axes['f'].set_ylabel("z")
             self.axes['f'].get_xaxis().set_ticks_position('top')
             self.axes['f'].get_xaxis().set_label_position('top')
             self.axes['f'].get_yaxis().get_label().set_rotation(0) 
             self.axes['f'].spines['bottom'].set_visible(True)
+#            self.axes['f'].set_aspect('equal', 'datalim')
             
             # Gauche
-            self.axes['g'] = self.fig.add_subplot(222, sharey = self.axes['f'])
+            self.axes['g'] = self.fig.add_subplot(222, sharey = self.axes['f'], aspect='equal', adjustable = 'datalim', anchor = 'C')
             self.axes['g'].set_xlabel("x")
             self.axes['g'].set_ylabel("z")
             self.axes['g'].get_xaxis().set_ticks_position('top')
@@ -1790,15 +1767,17 @@ class PanelTorseurs(wx.Panel):
             self.axes['g'].get_yaxis().set_ticks_position('right')
             self.axes['g'].get_yaxis().set_label_position('right')
             self.axes['g'].get_yaxis().get_label().set_rotation(0) 
+#            self.axes['g'].set_aspect('equal', 'datalim')
             
             # Dessus
-            self.axes['d'] = self.fig.add_subplot(223, sharex = self.axes['f'])
+            self.axes['d'] = self.fig.add_subplot(223, sharex = self.axes['f'], aspect='equal', adjustable = 'datalim', anchor = 'C')
             self.axes['d'].set_xlabel("y")
             self.axes['d'].set_ylabel("x")
             self.axes['d'].get_yaxis().get_label().set_rotation(0) 
+#            self.axes['d'].set_aspect('equal', 'datalim')
             
             # 3D
-            self.ax = self.fig.add_subplot(224, projection='3d')
+            self.ax = self.fig.add_subplot(224, projection='3d')#, aspect='equal')
             self.fig.axes.pop()
             
             # Taille des caractères
@@ -1817,7 +1796,7 @@ class PanelTorseurs(wx.Panel):
 
         else:
             m = 1
-            self.ax = self.fig.add_subplot(111, projection='3d')
+            self.ax = self.fig.add_subplot(111, projection='3d')#, aspect='equal')
             self.fig.axes.pop()
             setp(self.ax.w_xaxis.get_ticklabels(), fontsize=TAILLE_TICKS)
             setp(self.ax.w_yaxis.get_ticklabels(), fontsize=TAILLE_TICKS)
@@ -1827,6 +1806,8 @@ class PanelTorseurs(wx.Panel):
         self.ax.set_xlabel('x', x = 0, y = 0)
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
+        self.ax.set_aspect('equal', 'datalim')
+#        self.ax.pbaspect = [1.0, 1.0, 1.0]
         
         self.setLimites(multi)
         
@@ -1893,103 +1874,79 @@ class PanelTorseurs(wx.Panel):
 #            ax.callbacks.connect('xlim_changed', self.OnLimChanged)
 #            ax.callbacks.connect('ylim_changed', self.OnLimChanged)
         
+        #
+        # Le "cube" pour fixer l'aspect 
+        #
+        lx = []
+        ly = []
+        lz = []
+        for x in [0,1]:
+            for y in [0,1]:
+                for z in [0,1]:
+                    lx.append(100*(x-0.5))
+                    ly.append(100*(y-0.5))
+                    lz.append(100*(z-0.5))
+        self.cube = self.ax.plot(lx, ly, lz, 
+                                 mfc = (1,0,0), marker = 'o', visible = False)
+        
+        
+        self.regleVisibilites()
+        
+
+        
     ######################################################################################################
     def MisesAJourMarges(self):    
-        
         self.pointOrig.decaleTexte()
         self.pointRed.decaleTexte()
         for vue in self.vues:
             self.pointR[vue].decaleTexte()
             self.pointO[vue].decaleTexte()
-#        
-        self.canvas.Freeze()
-        self.canvas.draw()
-        self.calculerMargesFigure()
-        self.canvas.Thaw()
-#        
-#        self.canvas.draw()
-        return
+
+        self.fig.tight_layout()
+        
         
     ######################################################################################################
     def OnLimChanged(self, event):
-#        print "OnLimChanged"
-        event.Skip()
+        event.Skip()        
         if self.multi:
             wx.CallAfter(self.MisesAJourMarges)
+            wx.CallAfter(self.rectifierLimites)
             
-    
     ######################################################################################################
-    def on_draw(self, event):
-        return
-#        print "Ondraw", 
-        self.calculerMargesFigure()
-       
-       
-    ######################################################################################################
-    def calculerMargesFigure(self):
-        """ Calcule la marge latérales <position> de la figure
-            pour un affichage optimal des ticksLabels et ticks
+    def rectifierLimites(self):
+        """ Corrige les limites des 3 axes 2D
+            pour corriger le découpage créé par l'aspect "equal'
         """
-        cotes = ['h', 'b', 'g', 'd']
-        labels = {'h' : [], 'b' : [], 'g' : [], 'd' : []}
-        ticks = {'h' : [], 'b' : [], 'g' : [], 'd' : []}
-        pads = {'h' : [], 'b' : [], 'g' : [], 'd' : []}
-        bboxs = {}
-        
-        axes = {'h' : self.fig.axes[0], 'b' : self.fig.axes[2], 'g' : self.fig.axes[0], 'd' : self.fig.axes[1]}
-        
-        # On récupère les ticks et les labels de tous les cotés
-        for cote in ['g', 'd']:
-            labels[cote].append(axes[cote].get_yaxis().get_label())
-            for yticks in axes[cote].get_yaxis().get_majorticklabels():
-                ticks[cote].append(yticks)
                 
-        for cote in ['h', 'b']:
-            labels[cote].append(axes[cote].get_xaxis().get_label())
-            for xticks in axes[cote].get_xaxis().get_majorticklabels():
-                ticks[cote].append(xticks)
+        def rectifierLim(axe, limitesX, limitesY):
+            ly = axe.get_ylim()
+            lx = axe.get_xlim()
             
+            dX = limitesX[1] - limitesX[0]
+            dY = limitesY[1] - limitesY[0]
             
-        # On les met dans une bbox
-        for cote in cotes:  
-            bb = []     
-            for label in labels[cote]+ticks[cote]:
-                bbox = label.get_window_extent()
-                # the figure transform goes from relative coords->pixels and we
-                # want the inverse of that
-                bboxi = bbox.inverse_transformed(self.fig.transFigure)
-                bb.append(bboxi)
-            # this is the bbox that bounds all the bboxes, again in relative figure coords
-            bboxs[cote] = mtransforms.Bbox.union(bb)
-        
-        # On récupère les écart ticks/axes
-        pads['h'] = axes['h'].get_xaxis().get_major_ticks()[0].get_pad() + axes['h'].get_xaxis().OFFSETTEXTPAD 
-        pads['b'] = axes['b'].get_xaxis().get_major_ticks()[0].get_pad() + axes['b'].get_xaxis().OFFSETTEXTPAD 
-        pads['g'] = axes['g'].get_yaxis().get_major_ticks()[0].get_pad() + axes['g'].get_yaxis().OFFSETTEXTPAD 
-        pads['d'] = axes['d'].get_yaxis().get_major_ticks()[0].get_pad() + axes['d'].get_yaxis().OFFSETTEXTPAD 
-        pads['g'], pads['b'] = self.fig.transFigure.inverted().transform((pads['g'], pads['b']))
-        pads['d'], pads['h'] = self.fig.transFigure.inverted().transform((pads['d'], pads['h']))
-#        print pads
-        
-        # On défini les marges
-        left = 1.1*(bboxs['g'].width + pads['g'])
-        top = 1.0 - 1.1*(bboxs['h'].height + pads['h'])
-        right = 1.0 - 1.1*(bboxs['d'].width + pads['d'])
-        bottom = 1.1*(bboxs['b'].height + pads['b'])
-        
-        def dif(a,b):
-            return abs(a-b)>0.001
-        
-#        print left, right
-#        print bottom, top
-
-        if dif(left,self.fig.subplotpars.left) or dif(top,self.fig.subplotpars.top):
-            self.fig.subplots_adjust(left = left, top = top, bottom = bottom, right = right)
-
-            return True
+            dx = lx[1] - lx[0]
+            dy = ly[1] - ly[0]
             
-        return False        
+            if dX/dY < dx/dy:
+                dx = dx/dy*dY/2
+                m = (limitesX[1] + limitesX[0])/2
+                Lx = [m-dx, m+dx]
+                axe.set_xlim(Lx)
             
+            if dX/dY > dx/dy:
+                dx = dy/dx*dX/2
+                m = (limitesY[1] + limitesY[0])/2
+                Ly = [m-dy, m+dy]
+                axe.set_ylim(Ly)
+                
+        
+        rectifierLim(self.axes['f'], (LIMITE_Y0, LIMITE_Y1), (LIMITE_Z0, LIMITE_Z1))
+        rectifierLim(self.axes['g'], (LIMITE_X0, LIMITE_X1), (LIMITE_Z0, LIMITE_Z1))
+        rectifierLim(self.axes['d'], (LIMITE_Y0, LIMITE_Y1), (LIMITE_X1, LIMITE_X0))
+        
+        self.canvas.draw()
+        
     
     ######################################################################################################
     def EvtRadioBox(self, event):
@@ -2003,38 +1960,85 @@ class PanelTorseurs(wx.Panel):
         
         self.actualiser(self.app.tors, self.app.torsO)
         
-#        wx.CallAfter(self.zoneOptions.Refresh)
         
-#        if self.multi:
-#            wx.CallAfter(self.MisesAJourMarges)
-#        else:
-#            self.canvas.draw()
-        
-        
+    ######################################################################################################
+    def OnPress(self, event):
+        if event.button ==1:
+            if self.multi and event.inaxes in self.axes.values():
+                self.panX, self.panY = event.xdata, event.ydata
+                self.panAx = event.inaxes
+                
+                
+    ######################################################################################################
+    def OnRelease(self, event):
+        if event.button ==1:
+            self.panX, self.panY = None, None
+            self.panAx = None
+                      
+    ######################################################################################################
+    def OnMotion(self, event):
+        global LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
+        if self.panAx != None and event.inaxes == self.panAx:
+            x, y = event.xdata, event.ydata
+            dx, dy = x-self.panX, y-self.panY
+            if self.panAx == self.axes['f']:
+                LIMITE_Y0, LIMITE_Y1 = LIMITE_Y0-dx, LIMITE_Y1-dx
+                LIMITE_Z0, LIMITE_Z1 = LIMITE_Z0-dy, LIMITE_Z1-dy
+            elif self.panAx == self.axes['g']:
+                LIMITE_X0, LIMITE_X1 = LIMITE_X0-dx, LIMITE_X1-dx
+                LIMITE_Z0, LIMITE_Z1 = LIMITE_Z0-dy, LIMITE_Z1-dy
+            elif self.panAx == self.axes['d']:
+                LIMITE_X1, LIMITE_X0 = LIMITE_X1-dy, LIMITE_X0-dy
+                LIMITE_Y0, LIMITE_Y1 = LIMITE_Y0-dx, LIMITE_Y1-dx
+            
+            self.drawNouvLimites()
+            
     ######################################################################################################
     def OnPick(self, event):
         if event.mouseevent.button !=1:
             return
+        
         global LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
         art = event.artist
-        xdata, ydata, zdata = art._verts3d
-        x, y, z = xdata[0], ydata[0], zdata[0]
         
         def decaleAxe(range, centre):
             m = (range[1]+range[0])/2
             d = centre-m
             return range[0]+d, range[1]+d
         
-        LIMITE_X0, LIMITE_X1 = decaleAxe([LIMITE_X0, LIMITE_X1], x)
-        LIMITE_Y0, LIMITE_Y1 = decaleAxe([LIMITE_Y0, LIMITE_Y1], y)
-        LIMITE_Z0, LIMITE_Z1 = decaleAxe([LIMITE_Z0, LIMITE_Z1], z)
-        
+        if hasattr(art, "_verts3d"):
+            xdata, ydata, zdata = art._verts3d
+            x, y, z = xdata[0], ydata[0], zdata[0]
+
+            LIMITE_X0, LIMITE_X1 = decaleAxe([LIMITE_X0, LIMITE_X1], x)
+            LIMITE_Y0, LIMITE_Y1 = decaleAxe([LIMITE_Y0, LIMITE_Y1], y)
+            LIMITE_Z0, LIMITE_Z1 = decaleAxe([LIMITE_Z0, LIMITE_Z1], z)
+        else:
+            x, y = art.get_xdata()[0], art.get_ydata()[0]
+            axe = art.get_axes()
+            if axe == self.axes['f']:
+                LIMITE_Y0, LIMITE_Y1 = decaleAxe([LIMITE_Y0, LIMITE_Y1], x)
+                LIMITE_Z0, LIMITE_Z1 = decaleAxe([LIMITE_Z0, LIMITE_Z1], y)
+            elif axe == self.axes['g']:
+                LIMITE_X0, LIMITE_X1 = decaleAxe([LIMITE_X0, LIMITE_X1], x)
+                LIMITE_Z0, LIMITE_Z1 = decaleAxe([LIMITE_Z0, LIMITE_Z1], y)
+            else:
+                LIMITE_X1, LIMITE_X0 = decaleAxe([LIMITE_X1, LIMITE_X0], y)
+                LIMITE_Y0, LIMITE_Y1 = decaleAxe([LIMITE_Y0, LIMITE_Y1], x)
+                
         self.drawNouvLimites()
         
         
+    ######################################################################################################
     def drawNouvLimites(self):
+        """ Applique les nouvelles limites aux axes et echelles aux vecteurs ...
+            ... et redessine tout.
+        """
         self.setLimites(self.multi)
         self.setEchelles(self.multi)
+        
+#        self.pointRed.regleVisibilite()
+#        self.pointOrig.regleVisibilite()
         
         if hasattr(self, 'tors'):
             self.vectResultante.draw(o = self.tors.P, multi = self.multi)
@@ -2045,19 +2049,45 @@ class PanelTorseurs(wx.Panel):
             self.vectMomentO.draw(multi = self.multi)
             
         if self.multi:
-            for vue in self.vues:        
-                self.vectRO[vue].setComp(self.torsO.R)
-                self.vectRO[vue].draw()
+            for vue in self.vues:
+                self.pointR[vue].regleVisibilite()
+                self.pointO[vue].regleVisibilite()
+                if self.tracerActionOrig:      
+                    self.vectRO[vue].draw(o = self.torsO.P)
+                    self.vectMO[vue].draw(o = self.torsO.P)
                 
-                self.vectMO[vue].setComp(self.torsO.M)
-                self.vectMO[vue].draw()
+                if hasattr(self, 'tors'):
+                    self.vectR[vue].draw(o = self.tors.P)
+                    self.vectM[vue].draw(o = self.tors.P)
+        
         
         if self.tracerAxeCentral:
-            for vue in self.vues:
-                self.pointO[vue].draw(vect = [self.vectRO[vue],self.vectMO[vue]] )             
-            
+            self.axeCentral.draw()
+            if self.multi:
+                for vue in self.vues:
+                    self.axeC[vue].draw(vect = [self.vectRO[vue],self.vectMO[vue]] )             
+        
+        #
+        # Tracé du cube d'encombrement
+        #
+        lx = []
+        ly = []
+        lz = []
+        for x in [LIMITE_X0, LIMITE_X1]:
+            for y in [LIMITE_Y0, LIMITE_Y1]:
+                for z in [LIMITE_Z0, LIMITE_Z1]:
+                    lx.append(x)
+                    ly.append(y)
+                    lz.append(z)
+        self.cube[0].set_xdata(lx)
+        self.cube[0].set_ydata(ly)
+        self.cube[0].set_3d_properties(zs = lz)
+        
         self.canvas.draw()
         
+    
+
+    ######################################################################################################
     def zoomTout(self):
         global LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
         xr, yr, zr = self.vectResultante.get_data_lim()
@@ -2084,17 +2114,30 @@ class PanelTorseurs(wx.Panel):
         LIMITE_Z1 = max(z)
         
         dx, dy, dz = LIMITE_X1-LIMITE_X0, LIMITE_Y1-LIMITE_Y0, LIMITE_Z1-LIMITE_Z0
-        r = 10
-        ex, ey, ez = max(5, dx/r), max(5, dy/r), max(5, dz/r)
+        d = max([dx, dy, dz])/2
+        mx, my, mz = (LIMITE_X1+LIMITE_X0)/2, (LIMITE_Y1+LIMITE_Y0)/2, (LIMITE_Z1+LIMITE_Z0)/2
         
-        LIMITE_X0 = LIMITE_X0 - ex
-        LIMITE_Y0 = LIMITE_Y0 - ey
-        LIMITE_Z0 = LIMITE_Z0 - ez
-        LIMITE_X1 = LIMITE_X1 + ex
-        LIMITE_Y1 = LIMITE_Y1 + ey
-        LIMITE_Z1 = LIMITE_Z1 + ez
+        LIMITE_X0 = mx-d
+        LIMITE_X1 = mx+d
+        LIMITE_Y0 = my-d
+        LIMITE_Y1 = my+d
+        LIMITE_Z0 = mz-d
+        LIMITE_Z1 = mz+d
+        
+        r = 10
+        e = max(5, d/r)
+        
+        LIMITE_X0 = LIMITE_X0 - e
+        LIMITE_Y0 = LIMITE_Y0 - e
+        LIMITE_Z0 = LIMITE_Z0 - e
+        LIMITE_X1 = LIMITE_X1 + e
+        LIMITE_Y1 = LIMITE_Y1 + e
+        LIMITE_Z1 = LIMITE_Z1 + e
         
         self.drawNouvLimites()
+        
+        self.rectifierLimites()
+        
         
     ######################################################################################################
     def OnEnter(self, event = None):
@@ -2108,30 +2151,44 @@ class PanelTorseurs(wx.Panel):
         step = event.step
         coef = exp(step/100)
         
-        def getEchelleAxe(coef, range, centre):
-            delta = range[1] - range[0]
-            ecart = delta * coef /2
-            
-            L0 = centre - (centre-range[0])*coef
-            L1 = centre - (centre-range[1])*coef
+        def getEchelleAxe(coef, rng, centre):
+            L0 = centre - (centre-rng[0])*coef
+            L1 = centre - (centre-rng[1])*coef
             return L0, L1
-            # Prise en compte du centre (position de la souris
-            e1 = (centre - range[0])*((delta+2*ecart)/delta -1)
-            e2 = 2 * ecart - e1
+        
+        if event.inaxes == self.ax:
+            x, y, z = self.coord3D(event.xdata, event.ydata)
             
-            return range[0] - e1, range[1] + e2
-        
-        x, y, z = self.coord3D(event.xdata, event.ydata)
-        LIMITE_X0, LIMITE_X1 = getEchelleAxe(coef, [LIMITE_X0, LIMITE_X1], x)
-        LIMITE_Y0, LIMITE_Y1 = getEchelleAxe(coef, [LIMITE_Y0, LIMITE_Y1], y)
-        LIMITE_Z0, LIMITE_Z1 = getEchelleAxe(coef, [LIMITE_Z0, LIMITE_Z1], z)
-        ECHELLE_R = ECHELLE_R*coef
-        ECHELLE_M = ECHELLE_M*coef
-        
-        self.drawNouvLimites()
-        
+            LIMITE_X0, LIMITE_X1 = getEchelleAxe(coef, [LIMITE_X0, LIMITE_X1], x)
+            LIMITE_Y0, LIMITE_Y1 = getEchelleAxe(coef, [LIMITE_Y0, LIMITE_Y1], y)
+            LIMITE_Z0, LIMITE_Z1 = getEchelleAxe(coef, [LIMITE_Z0, LIMITE_Z1], z)
             
-        
+            ECHELLE_R = ECHELLE_R*coef
+            ECHELLE_M = ECHELLE_M*coef
+            
+            self.drawNouvLimites()
+            
+        elif event.inaxes in self.axes.values():
+            x, y = event.xdata, event.ydata
+
+            if event.inaxes == self.axes['f']:
+                LIMITE_Y0, LIMITE_Y1 = getEchelleAxe(coef, [LIMITE_Y0, LIMITE_Y1], x)
+                LIMITE_Z0, LIMITE_Z1 = getEchelleAxe(coef, [LIMITE_Z0, LIMITE_Z1], y)
+            elif event.inaxes == self.axes['g']:
+                LIMITE_X0, LIMITE_X1 = getEchelleAxe(coef, [LIMITE_X0, LIMITE_X1], x)
+                LIMITE_Z0, LIMITE_Z1 = getEchelleAxe(coef, [LIMITE_Z0, LIMITE_Z1], y)
+            else:
+                LIMITE_X1, LIMITE_X0 = getEchelleAxe(coef, [LIMITE_X1, LIMITE_X0], y)
+                LIMITE_Y0, LIMITE_Y1 = getEchelleAxe(coef, [LIMITE_Y0, LIMITE_Y1], x)
+                
+            ECHELLE_R = ECHELLE_R*coef
+            ECHELLE_M = ECHELLE_M*coef
+            
+            self.drawNouvLimites()
+            
+        else:
+            return
+            
         
     #########################################################################################################
     def EvtCheckBox(self, event):
@@ -2157,6 +2214,11 @@ class PanelTorseurs(wx.Panel):
         elif id == 7:
             self.tracerAxeCentral = event.IsChecked() 
         
+        self.regleVisibilites()
+        
+        
+    #########################################################################################################
+    def regleVisibilites(self):
         if self.multi:
             for vue in self.vues:
                 self.vectRO[vue].set_visible(self.tracerActionOrig * self.tracerResultantes)
@@ -2207,21 +2269,11 @@ class PanelTorseurs(wx.Panel):
         
         self.canvas.draw()
         
-        
-#    #########################################################################################################
-#    def miseAJourPtRed(self, P):
-#        self.pointRed.point = P
 
     #########################################################################################################
     def drawNouvOptions(self):
-        if self.multi:
-            m = 2
-        else:
-            m = 1
-        self.vectResultante.setEchelle(ECHELLE_R/m)
-        self.vectResultanteO.setEchelle(ECHELLE_R/m)
-        self.vectMoment.setEchelle(ECHELLE_M/m)
-        self.vectMomentO.setEchelle(ECHELLE_M/m)
+        self.setEchelles(self.multi)
+
 
     #########################################################################################################
     def actualiser(self, tors, torsO = None):
@@ -2267,9 +2319,9 @@ class PanelTorseurs(wx.Panel):
             if self.multi:
                 for vue in self.vues:
                     self.vectRO[vue].setComp(torsO.R)
-                    self.vectRO[vue].draw()
+                    self.vectRO[vue].draw(o = torsO.P)
                     self.vectMO[vue].setComp(torsO.M)
-                    self.vectMO[vue].draw()
+                    self.vectMO[vue].draw(o = torsO.P)
                     self.pointO[vue].draw(vect = [self.vectRO[vue],self.vectMO[vue]] )    
                     
         if self.tracerAxeCentral:
@@ -2294,57 +2346,57 @@ class PanelTorseurs(wx.Panel):
 #        self.OnEnter()
 #        self.Refresh()
 
-    #########################################################################################################
-    def actualiser2(self, tors, torsO = None):
-        
-        def getAncres(vect):
-            if vect.z > 0 :
-                av1 = 'top'
-                av2 = 'bottom'
-            else:
-                av2 = 'top'
-                av1 = 'bottom'
-          
-            if vect.x > 0:
-                ah1 = 'left'
-                ah2 = 'right'
-            else:
-                ah1 = 'right'
-                ah2 = 'left'
-                
-            return [ah1, av1], [ah2, av2]
-        
-#        print  tors.P
-        self.ax.cla()
-        self.ax.set_autoscale_on(False)
-        lim = 0.3
-        self.ax.set_xlim3d(-lim, lim)
-        self.ax.set_ylim3d(-lim, lim)
-        self.ax.set_zlim3d(-lim, lim)
-        
-        if self.tracerResultantes:
-            self.vectResultante.setComp(tors.R)
-            self.vectResultante.draw(self.ax, o = tors.P, ancre = getAncres(tors.R)[0])
-        
-        if self.tracerMoments:
-            self.vectMoment.setComp(tors.M)
-            self.vectMoment.draw(self.ax, o = tors.P)
-        
-        self.pointRed.point = tors.P
-        self.pointRed.draw(self.ax)
-        self.pointOrig.draw(self.ax)
-##        self.ax.redraw_in_frame()
-
-        if self.tracerActionOrig and torsO != None:
-            if self.tracerResultantes:
-                self.vectResultante.draw(self.ax)
-            if self.tracerMoments:
-                self.vectMomentO.setComp(torsO.M)
-                self.vectMomentO.draw(self.ax)
-            
-        self.canvas.draw()
-        self.Refresh()
-        
+#    #########################################################################################################
+#    def actualiser2(self, tors, torsO = None):
+#        
+#        def getAncres(vect):
+#            if vect.z > 0 :
+#                av1 = 'top'
+#                av2 = 'bottom'
+#            else:
+#                av2 = 'top'
+#                av1 = 'bottom'
+#          
+#            if vect.x > 0:
+#                ah1 = 'left'
+#                ah2 = 'right'
+#            else:
+#                ah1 = 'right'
+#                ah2 = 'left'
+#                
+#            return [ah1, av1], [ah2, av2]
+#        
+##        print  tors.P
+#        self.ax.cla()
+#        self.ax.set_autoscale_on(False)
+#        lim = 0.3
+#        self.ax.set_xlim3d(-lim, lim)
+#        self.ax.set_ylim3d(-lim, lim)
+#        self.ax.set_zlim3d(-lim, lim)
+#        
+#        if self.tracerResultantes:
+#            self.vectResultante.setComp(tors.R)
+#            self.vectResultante.draw(self.ax, o = tors.P, ancre = getAncres(tors.R)[0])
+#        
+#        if self.tracerMoments:
+#            self.vectMoment.setComp(tors.M)
+#            self.vectMoment.draw(self.ax, o = tors.P)
+#        
+#        self.pointRed.point = tors.P
+#        self.pointRed.draw(self.ax)
+#        self.pointOrig.draw(self.ax)
+###        self.ax.redraw_in_frame()
+#
+#        if self.tracerActionOrig and torsO != None:
+#            if self.tracerResultantes:
+#                self.vectResultante.draw(self.ax)
+#            if self.tracerMoments:
+#                self.vectMomentO.setComp(torsO.M)
+#                self.vectMomentO.draw(self.ax)
+#            
+#        self.canvas.draw()
+#        self.Refresh()
+#        
         
     #########################################################################################################
     def OnPause(self, etat):
@@ -2401,7 +2453,7 @@ class PanelTorseurs(wx.Panel):
 #############################################################################################################
 class PanelPyStatic(wx.Panel):
     def __init__(self, parent, app):
-        wx.Panel.__init__(self, parent, -1, size = (600,400))
+        wx.Panel.__init__(self, parent, -1, size = (600,600))
         
         self.parent = parent
         self.app = app
@@ -3328,7 +3380,7 @@ class MyCustomToolbar(NavigationToolbar2Wx):
         bmp = wx.Bitmap("zoomtout.png")
 #        bmp = wx.ArtProvider.GetBitmap(wx.ART_PASTE, wx.ART_TOOLBAR, (20,20))
         self.AddSimpleTool(self.ID_ZOOM_TOUT, bmp,
-                           u"Zomm au mieux", u"Zomm au mieux")
+                           u"Zoom au mieux", u"Zoom au mieux")
         wx.EVT_TOOL(self, self.ID_ZOOM_TOUT, self.zoomTout)
         
     def zoomTout(self, evt):
