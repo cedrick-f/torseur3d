@@ -56,7 +56,7 @@ cible = Executable(
 
 
 setup(  name = "torseur3D",
-        version = "1.1",
+        version = "1.2",
         author = "Cedrick FAURY",
         description = "affichage 3D d'actions mecaniques",
         options = {"build_exe": build_exe_options},

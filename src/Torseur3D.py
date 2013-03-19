@@ -9,7 +9,7 @@
 #############################################################################
 #############################################################################
 
-## Copyright (C) 2009-2012 Cédrick FAURY
+## Copyright (C) 2009-2013 Cédrick FAURY
 
 #    Torseur3D is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 """
 Torseur3D.py
 Affichage 3D de torseurs d'action mécanique
-Copyright (C) 2009 Cédrick FAURY
+Copyright (C) 2009-2013 Cédrick FAURY
 
 """
 import sys, os#, time
@@ -64,7 +64,7 @@ import Options
 from widgets import *
 #import traceback
 
-VERSION = "1.1"
+VERSION = "1.2"
 
 
 
@@ -2138,7 +2138,8 @@ class PanelTorseurs(wx.Panel):
         
         self.drawNouvLimites()
         
-        self.rectifierLimites()
+        if self.multi:
+            self.rectifierLimites()
         
         
     ######################################################################################################

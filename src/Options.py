@@ -374,7 +374,7 @@ class pnlCalibration(wx.Panel):
         hs = wx.BoxSizer(wx.HORIZONTAL)
         ttr = wx.StaticText(self, -1, u"Nom du port série")
         cb = wx.ComboBox(self, -1, self.opt["PORT"], size = (60, -1), 
-                         choices = ['COM1', 'COM2', 'COM3', 'COM4'],
+                         choices = ['COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9'],
                          style = wx.CB_DROPDOWN|wx.CB_READONLY ,
                          name = "")
         cb.SetToolTipString(u"Port série sur lequel est relié le capteur")
@@ -426,7 +426,7 @@ class pnlCalibration(wx.Panel):
             self.opt["TEMPS_REPONSE"] = float(eval(data.strip("%")))/100
         else:
             num = event.GetSelection()
-            self.opt["LANG"] = self.nom_langues[0][num]
+            self.opt["PORT"] = data #self.nom_langues[0][num]
             
     
     def EvtRadioBox(self, event):
