@@ -40,8 +40,8 @@ build_exe_options = {"packages": ["os"],
 # GUI applications require a different base on Windows (the default is for a
 # console application).
 base = None
-if sys.platform == "win32":
-    base = "Win32GUI"
+#if sys.platform == "win32":
+#    base = "Win32GUI"
 
 cible = Executable(
     script = "Torseur3D.py",
@@ -56,7 +56,7 @@ cible = Executable(
 
 
 setup(  name = "torseur3D",
-        version = "1.2",
+        version = "1.2.0.1",
         author = "Cedrick FAURY",
         description = "affichage 3D d'actions mecaniques",
         options = {"build_exe": build_exe_options},

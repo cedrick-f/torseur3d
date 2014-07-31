@@ -32,6 +32,7 @@ Copyright (C) 2009 Cédrick FAURY
 
 """
 import serial
+import os
 
 #from CedWidgets import *
 
@@ -39,10 +40,10 @@ import wx
 
 ################################################################################
 ################################################################################
-COM1 = 'COM1'
-COM2 = 'COM2'
-COM3 = 'COM3'
-COM4 = 'COM4'
+#COM1 = 'COM1'
+#COM2 = 'COM2'
+#COM3 = 'COM3'
+#COM4 = 'COM4'
 PORT = ''
 
 
@@ -97,6 +98,17 @@ class InterfaceAcquisition():
 
     ###########################################################################
     def testPort(self, port):
+        
+        print "test port", port
+        s = serial.Serial(port=port, baudrate=9600, bytesize=8,
+                                    parity='N', stopbits=1,
+                                    timeout=0.5, xonxoff=0, rtscts=0)
+#        s.timeout = 0.5   #make sure that the alive event can be checked from time to time
+        print "Port",port,"ouvert correctement"
+        port = port
+        return s, port
+        
+        
         
         try :
             print "test port", port
@@ -223,7 +235,30 @@ class InterfaceAcquisition():
         return code
 
 
+from serial.tools import list_ports
 
+
+def serial_ports():
+    """
+    Returns a generator for all available serial ports
+    """
+    if os.name == 'nt':
+        # windows
+        for i in range(256):
+            try:
+                s = serial.Serial(i)
+                s.close()
+                yield 'COM' + str(i + 1)
+            except serial.SerialException:
+                pass
+    else:
+        # unix
+        for port in list_ports.comports():
+            yield port[0]
+
+
+    
+    
 def test():
     InterfaceDAQ = InterfaceAcquisition()
     InterfaceDAQ.serial.timeout = 1
@@ -238,6 +273,7 @@ def test():
     InterfaceDAQ.serial.close()
     
 if __name__ == '__main__':
+    print(list(serial_ports()))
     test()
 
 

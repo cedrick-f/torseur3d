@@ -64,7 +64,7 @@ import Options
 from widgets import *
 #import traceback
 
-VERSION = "1.2"
+VERSION = "1.2beta2"
 
 
 
@@ -1207,7 +1207,6 @@ class Torseur3D(wx.Frame):
             #
             # Ouverture de l'interface d'acquisition
             #
-            print DAQ.PORT
             if DAQ.PORT == '':
                 dlg = wx.MessageDialog(None, u"Veuillez sélectionner le port série "\
                                              u"sur lequel est connecté le banc.",
