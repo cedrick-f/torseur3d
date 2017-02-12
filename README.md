@@ -1,7 +1,16 @@
 # torseur3d
 _Acquisition numérique et affichage d'actions mécaniques 3D_
 
-_**Torseur3D**_ est un logiciel d'acquisition numérique et affichage d'actions mécaniques 3D, associé au banc de mesure "Torseur3D" commercialisé par la société JEULIN (il y a quelques années !)
+_**Torseur3D**_ est un logiciel d'acquisition numérique et affichage d'actions mécaniques 3D.
+Il possède plusieurs modes de fonctionnement :
+ * utilisation du banc "maison" (en cours de développement)
+ * mode manuel : modification des composantes de l'effort appliqué depuis l'interface
+ * utilisation du banc de mesure "Torseur3D" commercialisé par la société JEULIN (il y a quelques années !)
+
+## Fonctionnalités ##
+
+![Capture](SiteWeb/Capture1.png)
+
 
 ## Développement ##
 
