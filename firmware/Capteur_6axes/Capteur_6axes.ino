@@ -50,6 +50,9 @@ void loop() {
     else if (requete == 0xbb) {   // Tarage
       tare();
       }
+    else if (requete == 0) {   // Test d'identification
+      Serial.write(0);
+      }
     power_down(); // Extinction
     
     while (Serial.available()) {

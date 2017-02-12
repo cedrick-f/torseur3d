@@ -134,10 +134,7 @@ class InterfaceAcquisition():
         return self.serial != None
     
     
-    ###########################################################################
-    def tarer(self):
-        for i, c in enumerate(self.codeBrut):
-            self.tare[i] = c
+    
     
     ###########################################################################
     def fermer(self):
@@ -211,16 +208,21 @@ class InterfaceAcquisitionJEULIN(InterfaceAcquisition):
         
         # On applique les coefs
      
-        tors.R.x = (self.code[5]+self.code[4]) * COEF_R
-        tors.R.y = (self.code[0]+self.code[1]) * COEF_R
-        tors.R.z = (self.code[2]+self.code[3]) * COEF_R
+        tors.R.x = (self.code[5]+self.code[4]) * self.COEF_R
+        tors.R.y = (self.code[0]+self.code[1]) * self.COEF_R
+        tors.R.z = (self.code[2]+self.code[3]) * self.COEF_R
      
-        tors.M.x = (self.code[0]-self.code[3]) * COEF_M
-        tors.M.y = (self.code[2]-self.code[5]) * COEF_M
-        tors.M.z = (self.code[4]-self.code[1]) * COEF_M
+        tors.M.x = (self.code[0]-self.code[3]) * self.COEF_M
+        tors.M.y = (self.code[2]-self.code[5]) * self.COEF_M
+        tors.M.z = (self.code[4]-self.code[1]) * self.COEF_M
         
         return
     
+    ###########################################################################
+    def tarer(self):
+        for i, c in enumerate(self.codeBrut):
+            self.tare[i] = c
+            
     ###########################################################################
     def getCodes(self):
         """ Récupération des états des jauges de déformation sous forme de "codes" sur 16bits
@@ -230,7 +232,7 @@ class InterfaceAcquisitionJEULIN(InterfaceAcquisition):
               - formation d'un mot de 16bits
         """
         code = []
-        for i,n in enumerate(LST_CODE):
+        for i,n in enumerate(self.LST_CODE):
             # On écrit le code de la jauge sur le port série
             self.serial.write(chr(n))
             # On lit la réponse du banc (2 caractères)         
@@ -247,9 +249,9 @@ class InterfaceAcquisitionJEULIN(InterfaceAcquisition):
                 # On applique la tare
                 c = _n10 - self.tare[i]
                 
-                if abs(c) > MAX_JAUGE:
+                if abs(c) > self.MAX_JAUGE:
                     print "\a" # Envoie un BIP en cas de dépassement
-                    code.append(sign(c) * MAX_JAUGE)
+                    code.append(sign(c) * self.MAX_JAUGE)
                 else:
                     code.append(c)
             else:
@@ -286,7 +288,8 @@ class InterfaceAcquisitionJEULIN(InterfaceAcquisition):
 class InterfaceAcquisitionArduino(InterfaceAcquisition):
 
     # Les codes à envoyer au banc (LSB First)
-    CODE = 0xaa
+    CODE_MSR = 0xaa     # Mesure
+    CODE_TAR = 0xbb     # Tarage
     
     # Les coefficient pour afficher des N et des Nm
     COEF_R = 0.11
@@ -318,16 +321,24 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
         
         # On applique les coefs
      
-        tors.R.x = (self.code[5]+self.code[4]) * COEF_R
-        tors.R.y = (self.code[0]+self.code[1]) * COEF_R
-        tors.R.z = (self.code[2]+self.code[3]) * COEF_R
+        tors.R.x = (self.code[5]+self.code[4]) * self.COEF_R
+        tors.R.y = (self.code[0]+self.code[1]) * self.COEF_R
+        tors.R.z = (self.code[2]+self.code[3]) * self.COEF_R
      
-        tors.M.x = (self.code[0]-self.code[3]) * COEF_M
-        tors.M.y = (self.code[2]-self.code[5]) * COEF_M
-        tors.M.z = (self.code[4]-self.code[1]) * COEF_M
+        tors.M.x = (self.code[0]-self.code[3]) * self.COEF_M
+        tors.M.y = (self.code[2]-self.code[5]) * self.COEF_M
+        tors.M.z = (self.code[4]-self.code[1]) * self.COEF_M
         
         return
     
+    
+    ###########################################################################
+    def tarer(self):
+        self.serial.write(chr(self.CODE_TAR))
+        for i, c in enumerate(self.codeBrut):
+            self.tare[i] = c
+            
+            
     ###########################################################################
     def getCodes(self):
         """ Récupération des états des cellules du capteur
@@ -337,7 +348,7 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
         code = []
         
         # On envoi le code de requete
-        self.serial.write(chr(CODE))
+        self.serial.write(chr(self.CODE_MSR))
         
         # On lit la réponse du banc (2x6 caractères)         
         text = self.serial.read(12)          
@@ -355,9 +366,9 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
                 # On applique la tare
                 c = _n10 - self.tare[i]
                 
-                if abs(c) > MAX_JAUGE:
+                if abs(c) > self.MAX_JAUGE:
                     print "\a" # Envoie un BIP en cas de dépassement
-                    code.append(sign(c) * MAX_JAUGE)
+                    code.append(sign(c) * self.MAX_JAUGE)
                 else:
                     code.append(c)
             else:
@@ -387,6 +398,29 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
                                )
             self.dlg.ShowModal()
             self.dlg.Destroy()
+
+
+
+def GetInterfaceAuto():
+    """ Détection automatisque du type d'interface
+    """
+    daq = InterfaceAcquisition()
+    if not daq.estOk():
+        return daq
+    
+    
+    daq.serial.write(0)   # Code pour tester qu'il s'agit bien du banc Arduino
+        
+    # On lit la réponse du banc        
+    text = daq.serial.read(1)          
+    if text:
+        daq.fermer()
+        return InterfaceAcquisitionArduino()
+    else:
+        daq.fermer()
+        return InterfaceAcquisitionJEULIN()
+        
+
 
 from serial.tools import list_ports
 

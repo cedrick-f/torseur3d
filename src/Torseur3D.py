@@ -64,7 +64,7 @@ import Options
 from widgets import *
 #import traceback
 
-VERSION = "1.2beta2"
+VERSION = "2.0-beta.2"
 
 
 
@@ -1174,19 +1174,19 @@ class Torseur3D(wx.Frame):
         self.tb.AddSimpleTool(10, wx.Bitmap(os.path.join("Images", "Icone_fullscreen.png")), 
                               u"Plein écran", u"Plein écran")
         self.Bind(wx.EVT_TOOL, self.commandePleinEcran, id=10)
-        
+          
         self.tb.AddCheckLabelTool(11, u"", wx.Bitmap(os.path.join("Images", "Icone_acquisition.png")), 
                                   shortHelp=u"Acquisition")
         self.Bind(wx.EVT_TOOL, self.commandeAcquisition, id=11)
-        
+          
         self.tb.AddSimpleTool(12, wx.Bitmap(os.path.join("Images", "Icone_tarer.png")), 
                                   u"Tarer", u"Tarer")
         self.Bind(wx.EVT_TOOL, self.onTarer, id=12)
-
+  
         self.boutonPause = self.tb.AddCheckTool(13, wx.Bitmap(os.path.join("Images", "Icone_pause.png")), 
                                                      shortHelp=u"Pause")
         self.Bind(wx.EVT_TOOL, self.onPause, id=13)
-        
+          
         #
         # Bouton "Options"
         #
@@ -1220,7 +1220,7 @@ class Torseur3D(wx.Frame):
                 
             print "Port :",DAQ.PORT
             
-            self.InterfaceDAQ = InterfaceAcquisition()
+            self.InterfaceDAQ = GetInterfaceAuto()
             if not self.InterfaceDAQ.estOk():
                 dlg = wx.MessageDialog(None, u'Il faut un port série pour utiliser Torseur3D\n\n' \
                                              u'Mode "Démo" !!',
@@ -1284,8 +1284,8 @@ class Torseur3D(wx.Frame):
         global TYPE_DEMO, PAS_R, PAS_M, TAILLE_VECTEUR, TAILLE_POINT, MODE_DEMARRAGE, \
                TAILLE_COMPOSANTES, ECHELLE_R, ECHELLE_M, PRECISION_R, PRECISION_M
         options = Options.Options()
-        options.optCalibration["Coef_R"] = DAQ.COEF_R
-        options.optCalibration["Coef_M"] = DAQ.COEF_M
+#         options.optCalibration["Coef_R"] = DAQ.COEF_R
+#         options.optCalibration["Coef_M"] = DAQ.COEF_M
         options.optGenerales["TypeDemo"] = TYPE_DEMO
         options.optCalibration["PORT"] = DAQ.PORT
         options.optGenerales["PAS_R"] = PAS_R
@@ -1348,8 +1348,8 @@ class Torseur3D(wx.Frame):
         global TYPE_DEMO, PAS_R, PAS_M, TAILLE_VECTEUR, TAILLE_POINT, MODE_DEMARRAGE,  \
                TAILLE_COMPOSANTES, ECHELLE_R, ECHELLE_M, PRECISION_R, PRECISION_M
         self.options = options.copie()
-        DAQ.COEF_R = self.options.optCalibration["Coef_R"]
-        DAQ.COEF_M = self.options.optCalibration["Coef_M"]
+#         DAQ.COEF_R = self.options.optCalibration["Coef_R"]
+#         DAQ.COEF_M = self.options.optCalibration["Coef_M"]
         DAQ.PORT = self.options.optCalibration["PORT"]
         
         TYPE_DEMO = self.options.optGenerales["TypeDemo"]
@@ -3379,10 +3379,10 @@ class MyCustomToolbar(NavigationToolbar2Wx):
         POSITION_OF_CONFIGURE_SUBPLOTS_BTN = 6
         self.DeleteToolByPos(POSITION_OF_CONFIGURE_SUBPLOTS_BTN)
         
-        bmp = wx.Bitmap(os.path.join("Images", "zoomtout.png"))
-#        bmp = wx.ArtProvider.GetBitmap(wx.ART_PASTE, wx.ART_TOOLBAR, (20,20))
+#         bmp = wx.Bitmap(os.path.join("Images", "zoomtout.png"))
+        bmp = wx.ArtProvider.GetBitmap(wx.ART_PASTE, wx.ART_TOOLBAR, (20,20))
         self.AddSimpleTool(self.ID_ZOOM_TOUT, bmp,
-                           u"Zoom au mieux", u"Zoom au mieux")
+                            u"Zoom au mieux", u"Zoom au mieux")
         wx.EVT_TOOL(self, self.ID_ZOOM_TOUT, self.zoomTout)
         
     def zoomTout(self, evt):
