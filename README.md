@@ -8,16 +8,22 @@ Il possède plusieurs modes de fonctionnement :
  * utilisation du banc de mesure "Torseur3D" commercialisé par la société JEULIN (il y a quelques années !)
 
 ## Fonctionnalités ##
+### Torseur en perspective ###
 Affichage du torseur de l'action mécanique exercée sur le banc, sous la forme des deux vecteurs composantes (résultante et moment), en perspective.
 
-![Capture](SiteWeb/Capture1.png)
-Réduits au centre du banc et/ou en tout autre point de réduction.
+![Torseur](SiteWeb/Capture1.png)
 
-Fonction de zoom (roulette de la souris), de centrage autour d'un point (clic sur le point) et de rotation de la vue.
+ * réduction des torseur au centre du banc et/ou en tout autre point de réduction,
+ * fonction de **zoom** (roulette de la souris), de centrage autour d'un point (clic sur le point) et de rotation de la vue.
+ * Affichage des composantes des vecteurs et de leurs valeurs. 	
+ * _**Nouveau**_ ! Affichage de l'**axe central** du torseur
+ * _**Nouveau**_ ! affichage possible en **4 vues** (3 projections orthogonales et 1 perspective)	
 
-Affichage des composantes des vecteurs et de leurs valeurs. 	
-Nouveau ! Affichage de l'axe central du torseur et affichage possible en 4 vues (3 projections orthogonales et 1 perspective)	
-Exercice de mise et surtout maintien en équilibre d'une barre virtuelle...
+### Equilibre d'une barre ###
+
+![Torseur](SiteWeb/Capture3.png)
+
+Exercice de mise et surtout maintien en équilibre d'une barre _virtuelle_...
 pas facile au début !
 
 De nombreux paramètres sont modifiables. 
