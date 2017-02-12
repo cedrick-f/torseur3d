@@ -47,26 +47,30 @@ import wx
 PORT = ''
 
 
-################################################################################
-################################################################################
-
-# Les codes à envoyer au banc (LSB First)
-LST_CODE = [199, 197, 203, 201, 195 , 193]
-
-# Les noms des composantes d'effort (niveau jauges)
-LST_COMP = ['YA','YB','ZB','ZC','XC','XA']
-
-# Les coefficient pour afficher des N et des Nm
-COEF_R = 0.11
-COEF_M = 0.0114
-
-PULS = [1.0, 2.0, 1.3, 0.9, 0.7, 2.5]
-
 # Accélération de la pesanteur (m/s²)
 G = 10
+    
+    
+################################################################################
+################################################################################
 
-# Valeur maxi admissible sur la jauge de déformation (BIP si dépassée)
-MAX_JAUGE = 260
+# # Les codes à envoyer au banc (LSB First)
+# LST_CODE = [199, 197, 203, 201, 195 , 193]
+# 
+# # Les noms des composantes d'effort (niveau jauges)
+# LST_COMP = ['YA','YB','ZB','ZC','XC','XA']
+# 
+# # Les coefficient pour afficher des N et des Nm
+# COEF_R = 0.11
+# COEF_M = 0.0114
+# 
+# PULS = [1.0, 2.0, 1.3, 0.9, 0.7, 2.5]
+# 
+# # Accélération de la pesanteur (m/s²)
+# G = 10
+# 
+# # Valeur maxi admissible sur la jauge de déformation (BIP si dépassée)
+# MAX_JAUGE = 260
 
 ################################################################################
 ################################################################################
@@ -74,7 +78,7 @@ MAX_JAUGE = 260
    
 ################################################################################
 #
-#   Fenetre principale 
+#   Interface d'acquisition
 #
 ################################################################################
 class InterfaceAcquisition():
@@ -147,6 +151,48 @@ class InterfaceAcquisition():
             self.serial.close()             #cleanup
         
         
+    
+
+
+
+    
+
+
+
+
+    
+
+
+################################################################################
+#
+#   Interface d'acquisition JEULIN
+#
+################################################################################
+class InterfaceAcquisitionJEULIN(InterfaceAcquisition):
+
+    # Les codes à envoyer au banc (LSB First)
+    LST_CODE = [199, 197, 203, 201, 195 , 193]
+    
+    # Les noms des composantes d'effort (niveau jauges)
+#     LST_COMP = ['YA','YB','ZB','ZC','XC','XA']
+    
+    # Les coefficient pour afficher des N et des Nm
+    COEF_R = 0.11
+    COEF_M = 0.0114
+    
+    PULS = [1.0, 2.0, 1.3, 0.9, 0.7, 2.5]
+    
+    # Accélération de la pesanteur (m/s²)
+    G = 10
+    
+    # Valeur maxi admissible sur la jauge de déformation (BIP si dépassée)
+    MAX_JAUGE = 260
+
+    def __init__(self):
+        InterfaceAcquisition.__init_(self)
+        
+
+  
     ###########################################################################
     def getTorseur(self, tors):
         """ Calcul les composantes du torseur <tors> (en N et en Nm)
@@ -174,31 +220,7 @@ class InterfaceAcquisition():
         tors.M.z = (self.code[4]-self.code[1]) * COEF_M
         
         return
-
-
-
-    ###########################################################################
-    def messageErreurCom(self):
-        if not hasattr(self, "dlg"):
-            self.dlg = wx.MessageDialog(None, u"Le banc torseur3D ne répond pas\n" \
-                                                  u"sur le port" + PORT +u"\n\n"\
-                                                  u'Causes possibles :\n\n' \
-                                                  u" - le banc n'est pas allumé\n" \
-                                                  u"    ==> allumer le banc !\n\n" \
-                                                  u" - le banc  n'est pas connecté au port "+PORT+u"\n" \
-                                                  u"    ==> fermer Torseur3D et le relancer en indiquant en argument\n" \
-                                                  u"        le port sur lequel est branché le banc :\n" \
-                                                  u"          par exemple : torseur3D COM2",
-                               u'Pas de port série',
-                               wx.OK | wx.ICON_ERROR 
-                               #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
-                               )
-            self.dlg.ShowModal()
-            self.dlg.Destroy()
-
-
-
-
+    
     ###########################################################################
     def getCodes(self):
         """ Récupération des états des jauges de déformation sous forme de "codes" sur 16bits
@@ -233,7 +255,138 @@ class InterfaceAcquisition():
             else:
                 pass
         return code
+    
+    
+    ###########################################################################
+    def messageErreurCom(self):
+        if not hasattr(self, "dlg"):
+            self.dlg = wx.MessageDialog(None, u"Le banc torseur3D ne répond pas\n" \
+                                                  u"sur le port" + PORT +u"\n\n"\
+                                                  u'Causes possibles :\n\n' \
+                                                  u" - le banc n'est pas allumé\n" \
+                                                  u"    ==> allumer le banc !\n\n" \
+                                                  u" - le banc  n'est pas connecté au port "+PORT+u"\n" \
+                                                  u"    ==> fermer Torseur3D et le relancer en indiquant en argument\n" \
+                                                  u"        le port sur lequel est branché le banc :\n" \
+                                                  u"          par exemple : torseur3D COM2",
+                               u'Pas de port série',
+                               wx.OK | wx.ICON_ERROR 
+                               #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                               )
+            self.dlg.ShowModal()
+            self.dlg.Destroy()
+            
+            
+    
+################################################################################
+#
+#   Interface d'acquisition Arduino
+#
+################################################################################
+class InterfaceAcquisitionArduino(InterfaceAcquisition):
 
+    # Les codes à envoyer au banc (LSB First)
+    CODE = 0xaa
+    
+    # Les coefficient pour afficher des N et des Nm
+    COEF_R = 0.11
+    COEF_M = 0.0114
+    
+    # Valeur maxi admissible sur la jauge de déformation (BIP si dépassée)
+    MAX_JAUGE = 260
+
+
+    def __init__(self):
+        InterfaceAcquisition.__init_(self)
+        
+    
+    ###########################################################################
+    def getTorseur(self, tors):
+        """ Calcul les composantes du torseur <tors> (en N et en Nm)
+            après avoir obtenu les codes de chaque jauge par acquisition sur le port série
+        """
+        try:
+            self.code = self.getCodes()
+        except:
+            self.messageErreurCom()
+            return
+        
+        if len(self.code) != 6:
+            self.messageErreurCom()
+            return
+            
+        
+        # On applique les coefs
+     
+        tors.R.x = (self.code[5]+self.code[4]) * COEF_R
+        tors.R.y = (self.code[0]+self.code[1]) * COEF_R
+        tors.R.z = (self.code[2]+self.code[3]) * COEF_R
+     
+        tors.M.x = (self.code[0]-self.code[3]) * COEF_M
+        tors.M.y = (self.code[2]-self.code[5]) * COEF_M
+        tors.M.z = (self.code[4]-self.code[1]) * COEF_M
+        
+        return
+    
+    ###########################################################################
+    def getCodes(self):
+        """ Récupération des états des cellules du capteur
+              - envoie d'un code de requete : CODE
+              - récupération de 6 mots de 16 bits
+        """
+        code = []
+        
+        # On envoi le code de requete
+        self.serial.write(chr(CODE))
+        
+        # On lit la réponse du banc (2x6 caractères)         
+        text = self.serial.read(12)          
+        if text:
+            
+            for i, n in range(6):                      
+                # On transforme les 2 caractères lus en un mot de 16 bits
+                n10 = ord(text[1+i*2])*256+ord(text[i*2])
+                if n10 > 32767:
+                    _n10 = n10-65535
+                else:
+                    _n10 = n10
+                self.codeBrut.append(_n10)
+                
+                # On applique la tare
+                c = _n10 - self.tare[i]
+                
+                if abs(c) > MAX_JAUGE:
+                    print "\a" # Envoie un BIP en cas de dépassement
+                    code.append(sign(c) * MAX_JAUGE)
+                else:
+                    code.append(c)
+            else:
+                pass
+        return code
+        
+    
+    ###########################################################################
+    def messageErreurCom(self):
+        if not hasattr(self, "dlg"):
+            self.dlg = wx.MessageDialog(None, u"L'Arduino ne répond pas\n" \
+                                                  u"sur le port" + PORT +u"\n\n"\
+                                                  u'Causes possibles :\n\n' \
+                                                  u" - l'Arduino n'est pas sous tension\n" \
+                                                  u"    ==> l'allumer !\n\n" \
+                                                  u" - l'Arduino n'est pas connecté au port "+PORT+u"\n" \
+                                                  u"    ==> fermer Torseur3D et le relancer en indiquant en argument\n" \
+                                                  u"        le port sur lequel est branché l'Arduino :\n" \
+                                                  u"          par exemple : torseur3D COM2\n" \
+                                                  u" - l'Arduino n'a pas le bon firmware\n" \
+                                                  u"    ==> installer le dernier firmware\n" \
+                                                  u"        le port sur lequel est branché l'Arduino :\n" ,
+                                                  
+                               u'Pas de port série',
+                               wx.OK | wx.ICON_ERROR 
+                               #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                               )
+            self.dlg.ShowModal()
+            self.dlg.Destroy()
 
 from serial.tools import list_ports
 
@@ -271,7 +424,9 @@ def test():
     
         InterfaceDAQ.getCodes()
     InterfaceDAQ.serial.close()
-    
+
+
+
 if __name__ == '__main__':
     print(list(serial_ports()))
     test()

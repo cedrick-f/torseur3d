@@ -34,6 +34,7 @@ Copyright (C) 2009 Cédrick FAURY
 from widgets import strSc, strRound
 import wx
 import os
+import numpy
 from numpy import sqrt
 
 rapportUniteLong = {'m' : 1,
@@ -118,7 +119,7 @@ class Droite():
 ################################################################################
 ################################################################################
 class Vecteur():
-    def __init__(self, x = 0, y = 0, z = 0, P1 = None, P2 = None, nom = ""):
+    def __init__(self, x = 0, y = 0, z = 0, P1 = None, P2 = None, nom = "V"):
         if P1 != None and P2 != None:
             self.x = P2.x - P1.x
             self.y = P2.y - P1.y
@@ -273,3 +274,74 @@ class Torseur():
         memDC.SelectObject(wx.NullBitmap)
         bmp.SetMaskColour(maskColor)
         return bmp
+    
+
+########################################################################################################
+#
+#  Opérations par Matrices de rotation
+#
+########################################################################################################  
+
+# Matrices de rotation obtenues avec Solidworks
+# Modèle File = C:\Users\Cedrick\Dropbox\SSIBP2015_2016\Dossiers Techniques Systèmes Labo\Capteur_AM_6axes\Capteur 6 axes V2.SLDASM
+
+sld_matrix = ["""R1
+    Origin                    = (51,9615242270663; 30; -90,1576172004121) mm
+    Rotational sub-matrix 1   = (0,742610657232506; -0,428746462856272; -0,514495755427526)
+    Rotational sub-matrix 2   = (0,606175165017196; 0,756923528069376; 0,244168880022379)
+    Rotational sub-matrix 3   = (0,28474739872575; -0,493196961916072; 0,821994936526787)
+    Translation vector       = (-51,9615242270663; -30; 90,1576172004121) mm
+    Scale                     = 1""",
+    """R2
+    Origin                    = (-51,9615242270663; 30; -90,1576172004121) mm
+    Rotational sub-matrix 1   = (-0,742610657232506; -0,428746462856273; -0,514495755427527)
+    Rotational sub-matrix 2   = (0,606175165017196; -0,756923528069376; -0,244168880022379)
+    Rotational sub-matrix 3   = (-0,28474739872575; -0,493196961916072; 0,821994936526787)
+    Translation vector       = (51,9615242270663; -30; 90,1576172004121) mm
+    Scale                     = 1""",
+    """R3
+    Origin                    = (-51,9615242270663; 30; -90,1576172004121) mm
+    Rotational sub-matrix 1   = (-2,97502621743517E-16; 0,857492925712544; -0,514495755427527)
+    Rotational sub-matrix 2   = (-0,958602586538822; 0,146501328013427; 0,244168880022379)
+    Rotational sub-matrix 3   = (0,284747398725749; 0,493196961916072; 0,821994936526786)
+    Translation vector       = (51,9615242270663; -30; 90,1576172004121) mm
+    Scale                     = 1""",
+    """R4
+    Origin                    = (-1,04083408558608E-14; -60; -90,1576172004121) mm
+    Rotational sub-matrix 1   = (0,742610657232506; -0,428746462856272; -0,514495755427527)
+    Rotational sub-matrix 2   = (0,352427421521626; 0,903424856082804; -0,244168880022379)
+    Rotational sub-matrix 3   = (0,569494797451499; -3,88578058618805E-16; 0,821994936526786)
+    Translation vector       = (1,04083408558608E-14; 60; 90,1576172004121) mm
+    Scale                     = 1""",
+    """R5
+    Origin                    = (-1,04083408558608E-14; -60; -90,1576172004121) mm
+    Rotational sub-matrix 1   = (-0,742610657232506; -0,428746462856272; -0,514495755427526)
+    Rotational sub-matrix 2   = (0,352427421521626; -0,903424856082804; 0,244168880022379)
+    Rotational sub-matrix 3   = (-0,569494797451499; 0; 0,821994936526787)
+    Translation vector       = (1,04083408558608E-14; 60; 90,1576172004121) mm
+    Scale                     = 1""",
+    """R6
+    Origin                    = (51,9615242270663; 30; -90,1576172004121) mm
+    Rotational sub-matrix 1   = (9,91675405811725E-17; 0,857492925712544; -0,514495755427527)
+    Rotational sub-matrix 2   = (-0,958602586538822; -0,146501328013428; -0,24416888002238)
+    Rotational sub-matrix 3   = (-0,28474739872575; 0,493196961916072; 0,821994936526786)
+    Translation vector       = (-51,9615242270663; -30; 90,1576172004121) mm
+    Scale                     = 1"""]
+
+sld_matrix2 = []
+for m in sld_matrix:
+    m = m.replace(',', '.')
+    m = m.replace(';', ',')
+    m = m.replace('mm', '')
+    sld_matrix2.append(m)
+
+# Vecteurs directeurs des 6 forces dans le repère global
+vec_dir = [Vecteur(*eval(R.split("\n")[2].split("=")[1])) for R in sld_matrix2]
+print vec_dir
+
+# Points d'application des 6 forces dans le repère global (en mm)
+pt_app = [Point(*eval(R.split("\n")[5].split("=")[1])) for R in sld_matrix2]
+print pt_app
+
+
+
