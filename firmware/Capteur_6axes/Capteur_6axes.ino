@@ -5,9 +5,9 @@
 #define DOUT1 A1    // data pin to C1
 #define DOUT2 A2    // data pin to C2
 #define DOUT3 A3    // data pin to C3
-#define DOUT4 1     // data pin to C4
-#define DOUT5 2     // data pin to C5
-#define DOUT6 3     // data pin to C6
+#define DOUT4 A4    // data pin to C4
+#define DOUT5 5     // data pin to C5
+#define DOUT6 6     // data pin to C6
 
 #define CHANNEL_COUNT 6
 
@@ -18,13 +18,14 @@ HX711 scales[CHANNEL_COUNT] = {HX711(DOUT1, CLK),
                                HX711(DOUT3, CLK),
                                HX711(DOUT4, CLK),
                                HX711(DOUT5, CLK),
-                               HX711(DOUT6, CLK)};
+                               HX711(DOUT6, CLK)
+                             };
 
 byte requete = 0;
 
 void setup() {
-  Serial.begin(115200);
-  
+  Serial.begin(38400);
+  Serial.print("3 capteurs");
   pinMode(CLK, OUTPUT);
   pinMode(DOUT1, INPUT);
   pinMode(DOUT2, INPUT);
@@ -39,6 +40,8 @@ void setup() {
 
 
 void loop() {
+  printRawData();
+  
   if (Serial.available() > 0) {
     requete = Serial.read();
     
