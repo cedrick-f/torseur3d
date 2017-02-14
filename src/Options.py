@@ -391,26 +391,26 @@ class pnlCalibration(wx.Panel):
         #
         sb2 = wx.StaticBox(self, -1, u"Coefficients", size = (200,-1))
         sbs2 = wx.StaticBoxSizer(sb2,wx.VERTICAL)
-        self.cr = Variable(u'Coefficient "Résultante"', 
-                            lstVal = self.opt["Coef_R"], 
-                            typ = VAR_REEL, bornes = [0.1,0.2])
-        vcr = VariableCtrl(self, self.cr, coef = 1, labelMPL = False, signeEgal = False,
-                          help = u"Coefficients de conversion \"données capteur\"/\"force\"\n" \
-                            u"à régler pour l'étalonnage du capteur.")
-   
-        self.Bind(EVT_VAR_CTRL, self.EvtVariableR, vcr)
-        
-        self.cm = Variable(u'Coefficient "Moment"', 
-                            lstVal = self.opt["Coef_M"], 
-                            typ = VAR_REEL, bornes = [0.01,0.02])
-        vcm = VariableCtrl(self, self.cm, coef = 1, labelMPL = False, signeEgal = False,
-                          help = u"Coefficients de conversion \"données capteur\"/\"moment\"\n" \
-                            u"à régler pour l'étalonnage du capteur.")
-        self.Bind(EVT_VAR_CTRL, self.EvtVariableM, vcm)
-        
-    
-        sbs2.Add(vcr, flag = wx.EXPAND|wx.ALL, border = 5)
-        sbs2.Add(vcm, flag = wx.EXPAND|wx.ALL, border = 5)
+#         self.cr = Variable(u'Coefficient "Résultante"', 
+#                             lstVal = self.opt["Coef_R"], 
+#                             typ = VAR_REEL, bornes = [0.1,0.2])
+#         vcr = VariableCtrl(self, self.cr, coef = 1, labelMPL = False, signeEgal = False,
+#                           help = u"Coefficients de conversion \"données capteur\"/\"force\"\n" \
+#                             u"à régler pour l'étalonnage du capteur.")
+#    
+#         self.Bind(EVT_VAR_CTRL, self.EvtVariableR, vcr)
+#         
+#         self.cm = Variable(u'Coefficient "Moment"', 
+#                             lstVal = self.opt["Coef_M"], 
+#                             typ = VAR_REEL, bornes = [0.01,0.02])
+#         vcm = VariableCtrl(self, self.cm, coef = 1, labelMPL = False, signeEgal = False,
+#                           help = u"Coefficients de conversion \"données capteur\"/\"moment\"\n" \
+#                             u"à régler pour l'étalonnage du capteur.")
+#         self.Bind(EVT_VAR_CTRL, self.EvtVariableM, vcm)
+#         
+#     
+#         sbs2.Add(vcr, flag = wx.EXPAND|wx.ALL, border = 5)
+#         sbs2.Add(vcm, flag = wx.EXPAND|wx.ALL, border = 5)
         
         self.ns.Add(sbs2, flag = wx.EXPAND|wx.ALL)
         

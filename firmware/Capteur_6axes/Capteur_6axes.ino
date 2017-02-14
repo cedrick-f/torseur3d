@@ -24,8 +24,8 @@ HX711 scales[CHANNEL_COUNT] = {HX711(DOUT1, CLK),
 byte requete = 0;
 
 void setup() {
-  Serial.begin(38400);
-  Serial.print("3 capteurs");
+  Serial.begin(9600);
+  //Serial.print("3 capteurs");
   pinMode(CLK, OUTPUT);
   pinMode(DOUT1, INPUT);
   pinMode(DOUT2, INPUT);
@@ -40,27 +40,34 @@ void setup() {
 
 
 void loop() {
-  printRawData();
+  //printRawData();
+  while (!Serial.available()) {} // wait for data to arrive
   
   if (Serial.available() > 0) {
     requete = Serial.read();
+    delay(10);
     
-    power_up();   // Allumage
+    //power_up();   // Allumage
     
-    if (requete == 0xaa) {        // Envoi de données
+    if (requete == 'M') {        // Envoi de données
       sendRawData(); //this is for sending raw data, for where everything else is done in processing
       }
-    else if (requete == 0xbb) {   // Tarage
+    else if (requete == 'T') {   // Tarage
       tare();
       }
-    else if (requete == 0) {   // Test d'identification
-      Serial.write(0);
+    else {
+    //else if (requete == 0x11) {      // Test d'identification
+      Serial.write(requete);           // Lettre 'A'
+      //Serial.println();
       }
-    power_down(); // Extinction
     
-    while (Serial.available()) {
-      Serial.read();
-      }
+    //power_down(); // Extinction
+    
+    
+    Serial.flush();
+    //while (Serial.available()) {
+    //  Serial.read();
+    //  }
     }
 }
 
@@ -77,12 +84,18 @@ void printRawData() {
 
 
 void sendRawData() {
+  byte b[4];
   for (int i=0; i<CHANNEL_COUNT; ++i) {
     results[i] = scales[i].read();
-    Serial.write(-results[i]);  
-  }  
+    //Serial.print(results[i]);
+  }
+  byte *buf;
+  buf = (byte *) results;
+  Serial.write(buf, 4*CHANNEL_COUNT); 
+  //Serial.println();
   delay(10);
 }
+
 
 
 void tare() {

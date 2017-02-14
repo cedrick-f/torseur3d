@@ -2808,7 +2808,8 @@ class PanelPyStatic(wx.Panel):
         
     def StopperThread(self):
         wx.BusyInfo(u"Arrêt du thread ...")
-        wx.Yield()
+#         wx.Yield()
+        wx.SafeYield()
         
         self.threadDess.stopper()
         running = True

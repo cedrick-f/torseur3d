@@ -32,11 +32,14 @@ Copyright (C) 2009 Cédrick FAURY
 
 """
 import serial
-import os
+import os, sys, glob, time
 
 #from CedWidgets import *
 
 import wx
+import struct
+
+import torseur
 
 ################################################################################
 ################################################################################
@@ -88,7 +91,6 @@ class InterfaceAcquisition():
         # La connection série
         #
         
-        
         self.serial, self.port = self.testPort(PORT)
         
         #
@@ -102,30 +104,31 @@ class InterfaceAcquisition():
 
     ###########################################################################
     def testPort(self, port):
-        
-        print "test port", port
-        s = serial.Serial(port=port, baudrate=9600, bytesize=8,
-                                    parity='N', stopbits=1,
-                                    timeout=0.5, xonxoff=0, rtscts=0)
-#        s.timeout = 0.5   #make sure that the alive event can be checked from time to time
-        print "Port",port,"ouvert correctement"
-        port = port
-        return s, port
+
+#         s = serial.Serial(port=port, baudrate = self.BaudRate, bytesize=8,
+#                                     parity='N', stopbits=1,
+#                                     timeout=0.5, xonxoff=0, rtscts=0)
+# #        s.timeout = 0.5   #make sure that the alive event can be checked from time to time
+#         print "Port",port,"ouvert correctement"
+#         port = port
+#         return s, port
         
         
         
         try :
-            print "test port", port
-            s = serial.Serial(port=port, baudrate=9600, bytesize=8,
+            print "test port", port, self.BaudRate, "...", 
+            s = serial.Serial(port=port, baudrate = self.BaudRate, bytesize = 8,
                                         parity='N', stopbits=1,
-                                        timeout=0.5, xonxoff=0, rtscts=0)
+                                        timeout=5, xonxoff=0, rtscts=0)
     #        s.timeout = 0.5   #make sure that the alive event can be checked from time to time
-            print "Port",port,"ouvert correctement"
+            print "Ok"
             port = port
+            time.sleep(3)
         except: #SerialException
             s = None
             port = None
-    
+            print "Erreur"
+            
         return s, port
     
     
@@ -186,7 +189,8 @@ class InterfaceAcquisitionJEULIN(InterfaceAcquisition):
     MAX_JAUGE = 260
 
     def __init__(self):
-        InterfaceAcquisition.__init_(self)
+        self.BaudRate = 9600
+        InterfaceAcquisition.__init__(self)
         
 
   
@@ -217,6 +221,20 @@ class InterfaceAcquisitionJEULIN(InterfaceAcquisition):
         tors.M.z = (self.code[4]-self.code[1]) * self.COEF_M
         
         return
+    
+    
+    ###########################################################################
+    def testFirmware(self):
+        # On écrit le code de la 1ère jauge sur le port série
+        self.serial.write(chr(self.LST_CODE[0]))
+            
+        # On lit la réponse du banc (2 caractères)         
+        text = self.serial.read(2)          
+        if text:
+            return True
+        
+        return False
+    
     
     ###########################################################################
     def tarer(self):
@@ -288,19 +306,21 @@ class InterfaceAcquisitionJEULIN(InterfaceAcquisition):
 class InterfaceAcquisitionArduino(InterfaceAcquisition):
 
     # Les codes à envoyer au banc (LSB First)
-    CODE_MSR = 0xaa     # Mesure
-    CODE_TAR = 0xbb     # Tarage
+    CODE_MSR = ord('M')     # Mesure
+    CODE_TAR = ord('T')     # Tarage
     
     # Les coefficient pour afficher des N et des Nm
     COEF_R = 0.11
     COEF_M = 0.0114
+    COEF = 0.000005
     
     # Valeur maxi admissible sur la jauge de déformation (BIP si dépassée)
-    MAX_JAUGE = 260
+    MAX_JAUGE = 100000000
 
 
     def __init__(self):
-        InterfaceAcquisition.__init_(self)
+        self.BaudRate = 9600
+        InterfaceAcquisition.__init__(self)
         
     
     ###########################################################################
@@ -308,26 +328,33 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
         """ Calcul les composantes du torseur <tors> (en N et en Nm)
             après avoir obtenu les codes de chaque jauge par acquisition sur le port série
         """
-        try:
-            self.code = self.getCodes()
-        except:
-            self.messageErreurCom()
-            return
+#         try:
+        self.code = self.getCodes()
+#         except:
+#             self.messageErreurCom()
+#             return
         
         if len(self.code) != 6:
             self.messageErreurCom()
             return
-            
         
         # On applique les coefs
-     
-        tors.R.x = (self.code[5]+self.code[4]) * self.COEF_R
-        tors.R.y = (self.code[0]+self.code[1]) * self.COEF_R
-        tors.R.z = (self.code[2]+self.code[3]) * self.COEF_R
-     
-        tors.M.x = (self.code[0]-self.code[3]) * self.COEF_M
-        tors.M.y = (self.code[2]-self.code[5]) * self.COEF_M
-        tors.M.z = (self.code[4]-self.code[1]) * self.COEF_M
+        for i in range(6):
+            self.code[i] *= self.COEF
+            
+        # On applique le transformation
+        
+        tors.R = sum([self.code[i]*torseur.vec_dir[i] for i in range(6)]) 
+#         tors.R.y = sum([self.code[i]*torseur.vec_dir[i].y for i in range(6)]) 
+#         tors.R.z = sum([self.code[i]*torseur.vec_dir[i].z for i in range(6)]) 
+        
+        
+        
+        tors.M = sum([(self.code[i]*torseur.vec_dir[i])*torseur.pt_app[i]/1000 for i in range(6)])
+       
+#         tors.M.x = (self.code[0]-self.code[3]) * self.COEF_M
+#         tors.M.y = (self.code[2]-self.code[5]) * self.COEF_M
+#         tors.M.z = (self.code[4]-self.code[1]) * self.COEF_M
         
         return
     
@@ -337,8 +364,24 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
         self.serial.write(chr(self.CODE_TAR))
         for i, c in enumerate(self.codeBrut):
             self.tare[i] = c
-            
-            
+    
+    
+    ###########################################################################
+    def testFirmware(self):
+        print "testFirmware Arduino ...",
+        self.serial.write('A')   # Code pour tester qu'il s'agit bien du banc Arduino
+#         print self.serial.inWaiting()
+        time.sleep(1)
+        # On lit la réponse du banc        
+        text = self.serial.read(self.serial.inWaiting())
+#         print text, ord(text)
+        if text and text == 'A':
+            print "Ok"
+            return True
+        print
+        return False
+    
+    
     ###########################################################################
     def getCodes(self):
         """ Récupération des états des cellules du capteur
@@ -349,25 +392,29 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
         
         # On envoi le code de requete
         self.serial.write(chr(self.CODE_MSR))
-        
+#         time.sleep(1)
         # On lit la réponse du banc (2x6 caractères)         
-        text = self.serial.read(12)          
+        text = self.serial.read(24)      
+#         print "getCodes", text, len(text)
         if text:
-            
-            for i, n in range(6):                      
+            for i in range(6):
+                _n10 = struct.unpack("<l", text[i*4:4+i*4])[0]
+                                    
                 # On transforme les 2 caractères lus en un mot de 16 bits
-                n10 = ord(text[1+i*2])*256+ord(text[i*2])
-                if n10 > 32767:
-                    _n10 = n10-65535
-                else:
-                    _n10 = n10
+#                 n10 = ord(text[1+i*2])*256+ord(text[i*2])+ord(text[1+i*2])*256+ord(text[i*2])
+#                 if n10 > 2147483648:
+#                     _n10 = n10-4294967295
+#                 else:
+#                     _n10 = n10
+                    
+#                 print _n10
                 self.codeBrut.append(_n10)
                 
                 # On applique la tare
                 c = _n10 - self.tare[i]
                 
                 if abs(c) > self.MAX_JAUGE:
-                    print "\a" # Envoie un BIP en cas de dépassement
+#                     print "\a" # Envoie un BIP en cas de dépassement
                     code.append(sign(c) * self.MAX_JAUGE)
                 else:
                     code.append(c)
@@ -404,47 +451,71 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
 def GetInterfaceAuto():
     """ Détection automatisque du type d'interface
     """
-    daq = InterfaceAcquisition()
-    if not daq.estOk():
+    print "GetInterfaceAuto"
+    
+    daq = InterfaceAcquisitionArduino()
+    if daq.testFirmware():
         return daq
+    daq.fermer()
     
+    daq = InterfaceAcquisitionJEULIN()
+    if daq.testFirmware():
+        return daq
+    daq.fermer()
     
-    daq.serial.write(0)   # Code pour tester qu'il s'agit bien du banc Arduino
-        
-    # On lit la réponse du banc        
-    text = daq.serial.read(1)          
-    if text:
-        daq.fermer()
-        return InterfaceAcquisitionArduino()
-    else:
-        daq.fermer()
-        return InterfaceAcquisitionJEULIN()
         
 
 
 from serial.tools import list_ports
 
 
+# def serial_ports():
+#     """
+#     Returns a generator for all available serial ports
+#     """
+#     if os.name == 'nt':
+#         # windows
+#         for i in range(256):
+#             try:
+#                 s = serial.Serial(i)
+#                 s.close()
+#                 yield 'COM' + str(i + 1)
+#             except serial.SerialException:
+#                 pass
+#     else:
+#         # unix
+#         for port in list_ports.comports():
+#             yield port[0]
+
+
 def serial_ports():
+    """ Lists serial port names
+
+        :raises EnvironmentError:
+            On unsupported or unknown platforms
+        :returns:
+            A list of the serial ports available on the system
     """
-    Returns a generator for all available serial ports
-    """
-    if os.name == 'nt':
-        # windows
-        for i in range(256):
-            try:
-                s = serial.Serial(i)
-                s.close()
-                yield 'COM' + str(i + 1)
-            except serial.SerialException:
-                pass
+    if sys.platform.startswith('win'):
+        ports = ['COM%s' % (i + 1) for i in range(256)]
+    elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+        ports = glob.glob('/dev/tty[A-Za-z]*')
+    elif sys.platform.startswith('darwin'):
+        ports = glob.glob('/dev/tty.*')
     else:
-        # unix
-        for port in list_ports.comports():
-            yield port[0]
+        raise EnvironmentError('Unsupported platform')
 
+    result = []
+    for port in ports:
+        try:
+            s = serial.Serial(port)
+            s.close()
+            result.append(port)
+        except (OSError, serial.SerialException):
+            pass
+    return result
 
-    
     
 def test():
     InterfaceDAQ = InterfaceAcquisition()
@@ -459,6 +530,13 @@ def test():
         InterfaceDAQ.getCodes()
     InterfaceDAQ.serial.close()
 
+def sign(v):
+    if v>0:
+        return 1
+    elif v<0:
+        return -1
+    else:
+        return 0
 
 
 if __name__ == '__main__':

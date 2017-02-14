@@ -148,6 +148,21 @@ class Vecteur():
         
         return
     
+    def __rmul__(self, v):
+        """ Produit :
+            - par un scalaire si v est réel
+            - vectoriel si v est Vecteur
+        """
+        if isinstance(v, Vecteur):
+            return Vecteur(self.y * v.z - self.z * v.y,
+                           self.z * v.x - self.x * v.z,
+                           self.x * v.y - self.y * v.x,
+                           )
+        else:
+            return Vecteur(self.x*v, self.y*v, self.z*v)
+        
+        return
+    
     def __div__(self, k):
         return Vecteur(self.x/k, self.y/k, self.z/k)
         
@@ -165,7 +180,13 @@ class Vecteur():
             return Vecteur(self.x + v.x, 
                            self.y + v.y, 
                            self.z + v.z)
+        else:
+            return self
 
+    def __radd__(self, other):
+        return self.__add__(other)
+    
+    
     def setComp(self, vect):
         """ Appliquer les composantes du Vecteur <vect> à self
         """
@@ -340,7 +361,7 @@ vec_dir = [Vecteur(*eval(R.split("\n")[2].split("=")[1])) for R in sld_matrix2]
 print vec_dir
 
 # Points d'application des 6 forces dans le repère global (en mm)
-pt_app = [Point(*eval(R.split("\n")[5].split("=")[1])) for R in sld_matrix2]
+pt_app = [Vecteur(*eval(R.split("\n")[5].split("=")[1])) for R in sld_matrix2]
 print pt_app
 
 
