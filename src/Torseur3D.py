@@ -1221,7 +1221,7 @@ class Torseur3D(wx.Frame):
             print "Port :",DAQ.PORT
             
             self.InterfaceDAQ = GetInterfaceAuto()
-            if not self.InterfaceDAQ.estOk():
+            if not self.InterfaceDAQ or not self.InterfaceDAQ.estOk():
                 dlg = wx.MessageDialog(None, u'Il faut un port série pour utiliser Torseur3D\n\n' \
                                              u'Mode "Démo" !!',
                                    u'Pas de port série',

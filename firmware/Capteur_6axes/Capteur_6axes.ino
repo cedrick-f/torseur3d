@@ -12,6 +12,7 @@
 #define CHANNEL_COUNT 6
 
 long int results[CHANNEL_COUNT];
+long int tares[CHANNEL_COUNT];
 
 HX711 scales[CHANNEL_COUNT] = {HX711(DOUT1, CLK),
                                HX711(DOUT2, CLK),
@@ -56,8 +57,7 @@ void loop() {
       tare();
       }
     else {
-    //else if (requete == 0x11) {      // Test d'identification
-      Serial.write(requete);           // Lettre 'A'
+      Serial.write(requete);           // Retour du même caractère
       //Serial.println();
       }
     
@@ -75,7 +75,7 @@ void loop() {
 
 void printRawData() {
   for (int i=0; i<CHANNEL_COUNT; ++i) {
-    results[i] = scales[i].read();
+    results[i] = scales[i].read()-tares[i];
     Serial.print( -results[i]);  
     Serial.print( (i!=CHANNEL_COUNT-1)?"\t":"\n");
   }  
@@ -86,8 +86,9 @@ void printRawData() {
 void sendRawData() {
   byte b[4];
   for (int i=0; i<CHANNEL_COUNT; ++i) {
-    results[i] = scales[i].read();
+    results[i] = scales[i].read()-tares[i];
     //Serial.print(results[i]);
+    //Serial.print('\t');
   }
   byte *buf;
   buf = (byte *) results;
@@ -100,7 +101,7 @@ void sendRawData() {
 
 void tare() {
   for (int i=0; i<CHANNEL_COUNT; ++i) {
-    scales[i].tare();
+    tares[i] = scales[i].read();
   }
 }
 

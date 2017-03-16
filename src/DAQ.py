@@ -310,12 +310,12 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
     CODE_TAR = ord('T')     # Tarage
     
     # Les coefficient pour afficher des N et des Nm
-    COEF_R = 0.11
-    COEF_M = 0.0114
-    COEF = 0.000005
+    COEF_R = 1
+    COEF_M = 1
+    COEF = 1
     
     # Valeur maxi admissible sur la jauge de déformation (BIP si dépassée)
-    MAX_JAUGE = 100000000
+    MAX_JAUGE = 20 # Newton
 
 
     def __init__(self):
@@ -338,6 +338,7 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
             self.messageErreurCom()
             return
         
+        print self.code
         # On applique les coefs
         for i in range(6):
             self.code[i] *= self.COEF
@@ -362,23 +363,41 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
     ###########################################################################
     def tarer(self):
         self.serial.write(chr(self.CODE_TAR))
-        for i, c in enumerate(self.codeBrut):
-            self.tare[i] = c
+#         for i, c in enumerate(self.codeBrut):
+#             self.tare[i] = c
     
     
     ###########################################################################
     def testFirmware(self):
-        print "testFirmware Arduino ...",
+        print "testFirmware Arduino",
+        wx.BeginBusyCursor()
+        self.serial.flush()
+        time.sleep(1)
         self.serial.write('A')   # Code pour tester qu'il s'agit bien du banc Arduino
 #         print self.serial.inWaiting()
-        time.sleep(1)
+        time.sleep(2)
         # On lit la réponse du banc        
-        text = self.serial.read(self.serial.inWaiting())
-#         print text, ord(text)
+        text = self.serial.read(1)#self.serial.inWaiting())
+        print "...", text
         if text and text == 'A':
             print "Ok"
+            wx.EndBusyCursor()
+            self.serial.flush()
             return True
+        else:
+            self.serial.write('A')   # Code pour tester qu'il s'agit bien du banc Arduino
+    #         print self.serial.inWaiting()
+            time.sleep(2)
+            # On lit la réponse du banc        
+            text = self.serial.read(1)#self.serial.inWaiting())
+            print "...", text
+            if text and text == 'A':
+                print "Ok"
+                wx.EndBusyCursor()
+                self.serial.flush()
+                return True
         print
+        wx.EndBusyCursor()
         return False
     
     
@@ -386,12 +405,15 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
     def getCodes(self):
         """ Récupération des états des cellules du capteur
               - envoie d'un code de requete : CODE
-              - récupération de 6 mots de 16 bits
+              - récupération de 6 mots de 24 bits
         """
         code = []
         
         # On envoi le code de requete
-        self.serial.write(chr(self.CODE_MSR))
+        try:
+            self.serial.write(chr(self.CODE_MSR))
+        except serial.serialutil.SerialException:
+            return code
 #         time.sleep(1)
         # On lit la réponse du banc (2x6 caractères)         
         text = self.serial.read(24)      
@@ -413,11 +435,19 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
                 # On applique la tare
                 c = _n10 - self.tare[i]
                 
+                # On corrige le signe (sens alternés sur le montage)
+                c *= sign(i%2-0.5)
+                
+                # On applique le coefficient pour convertir en N
+                c *= 9.21e-7*9.81
+                
                 if abs(c) > self.MAX_JAUGE:
-#                     print "\a" # Envoie un BIP en cas de dépassement
+                    print "\a" # Envoie un BIP en cas de dépassement
                     code.append(sign(c) * self.MAX_JAUGE)
                 else:
                     code.append(c)
+                    
+                
             else:
                 pass
         return code
@@ -454,14 +484,14 @@ def GetInterfaceAuto():
     print "GetInterfaceAuto"
     
     daq = InterfaceAcquisitionArduino()
-    if daq.testFirmware():
+    if daq.estOk() and daq.testFirmware():
         return daq
     daq.fermer()
     
-    daq = InterfaceAcquisitionJEULIN()
-    if daq.testFirmware():
-        return daq
-    daq.fermer()
+#     daq = InterfaceAcquisitionJEULIN()
+#     if daq.estOk() and daq.testFirmware():
+#         return daq
+#     daq.fermer()
     
         
 
