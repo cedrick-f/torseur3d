@@ -2,4 +2,4 @@
 _Réalisé avec SolidWorks 2013 SP5_
 
 
-![Torseur](modeles/Capteur6axes.png)
+![Capteur](modeles/Capteur_AM_6axes/Capteur6axes.png)
