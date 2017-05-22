@@ -196,7 +196,8 @@ class FenOptions(wx.Dialog):
             dicOpt = options.typesOptions[nomOpt]
             pnlOpt = self.panelOptions[nomOpt]
             nb.AddPage(pnlOpt(nb, dicOpt), nomOpt)
-
+        self.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
+        
         nb.SetMinSize((400,-1))
         sizer.Add(nb, flag = wx.EXPAND)#|wx.ALL)
         self.nb = nb
@@ -239,6 +240,11 @@ class FenOptions(wx.Dialog):
 #        self.SetSize(self.GetMinSize())
         self.SetSizerAndFit(sizer)
         
+    
+    def OnPageChanged(self, event):
+        if hasattr(self.panelOptions[u"Acquisition"], "cbPorts"):
+            self.panelOptions[u"Acquisition"].cbPorts.miseAJourPorts()
+        
         
     def OnClick(self, event):
         self.options.defaut()
@@ -276,11 +282,12 @@ class pnlGenerales(wx.Panel):
         # Option "Type de mode démo"
         #
         rb1 = wx.RadioBox(self, -1, u"Mode d'acquisition", wx.DefaultPosition, wx.DefaultSize,
-                          [u"Démo (aléatoire)",u"Manuel", u"Banc \"Torseur 3D (JEULIN)\""],#, u"Arduino"], 
+                          [u"Démo (aléatoire)",u"Manuel", u"Banc d'essai"],#, u"Arduino"], 
                           1, wx.RA_SPECIFY_COLS)
         rb1.SetToolTipString(u"Choix du mode d'acquisition des composantes du torseur :\n" \
-                             u"\tDémo = variation aléatoire\n" \
-                             u"\tManuel = saisie manuel\n")
+                             u"\tDémo = variation aléatoire des valeurs des composantes\n" \
+                             u"\tManuel = saisie manuelle des valeurs composantes (boutons et slider)\n" \
+                             u"\tBanc d'essai = utilisation d'un banc d'essai (Arduino ou JEULIN)\n")
         rb1.SetSelection(self.opt["TypeDemo"])
 
         self.Bind(wx.EVT_RADIOBOX, self.EvtRadioBox, rb1)
@@ -359,8 +366,10 @@ class pnlCalibration(wx.Panel):
         
         self.CreatePanel()
     
+    def miseAJourPorts(self):
+        self.cbPorts.Set(list(DAQ.serial_ports()))
         
-    
+        
     def CreatePanel(self):
         
         self.ns = wx.BoxSizer(wx.VERTICAL)
@@ -383,38 +392,50 @@ class pnlCalibration(wx.Panel):
         hs.Add(ttr, flag = wx.ALIGN_CENTER_VERTICAL|wx.ALL, border = 4)
         hs.Add(cb, flag = wx.ALIGN_CENTER_VERTICAL|wx.ALL, border = 4)
         sbs3.Add(hs, flag = wx.EXPAND|wx.ALL, border = 5)
-        
+        self.cbPorts = cb
         self.ns.Add(sbs3, flag = wx.EXPAND|wx.ALL)
         
         #
         # Coefficients
         #
         sb2 = wx.StaticBox(self, -1, u"Coefficients", size = (200,-1))
-        sbs2 = wx.StaticBoxSizer(sb2,wx.VERTICAL)
-#         self.cr = Variable(u'Coefficient "Résultante"', 
-#                             lstVal = self.opt["Coef_R"], 
-#                             typ = VAR_REEL, bornes = [0.1,0.2])
-#         vcr = VariableCtrl(self, self.cr, coef = 1, labelMPL = False, signeEgal = False,
-#                           help = u"Coefficients de conversion \"données capteur\"/\"force\"\n" \
-#                             u"à régler pour l'étalonnage du capteur.")
-#    
-#         self.Bind(EVT_VAR_CTRL, self.EvtVariableR, vcr)
-#         
-#         self.cm = Variable(u'Coefficient "Moment"', 
-#                             lstVal = self.opt["Coef_M"], 
-#                             typ = VAR_REEL, bornes = [0.01,0.02])
-#         vcm = VariableCtrl(self, self.cm, coef = 1, labelMPL = False, signeEgal = False,
-#                           help = u"Coefficients de conversion \"données capteur\"/\"moment\"\n" \
-#                             u"à régler pour l'étalonnage du capteur.")
-#         self.Bind(EVT_VAR_CTRL, self.EvtVariableM, vcm)
-#         
-#     
-#         sbs2.Add(vcr, flag = wx.EXPAND|wx.ALL, border = 5)
-#         sbs2.Add(vcm, flag = wx.EXPAND|wx.ALL, border = 5)
+        self.sbs2 = wx.StaticBoxSizer(sb2,wx.VERTICAL)
+        self.adapterDAQ()
+        self.ns.Add(self.sbs2, flag = wx.EXPAND|wx.ALL)
         
-        self.ns.Add(sbs2, flag = wx.EXPAND|wx.ALL)
+        
         
         self.SetSizerAndFit(self.ns)
+    
+    
+    #############################################################################################
+    def adapterDAQ(self, DAQ = None):
+        if DAQ is None:
+            return
+        elif DAQ == "J":
+            self.cr = Variable(u'Coefficient "Résultante"', 
+                                lstVal = self.opt["Coef_R"], 
+                                typ = VAR_REEL, bornes = [0.1,0.2])
+            vcr = VariableCtrl(self, self.cr, coef = 1, labelMPL = False, signeEgal = False,
+                              help = u"Coefficients de conversion \"données capteur\"/\"force\"\n" \
+                                u"à régler pour l'étalonnage du capteur.")
+        
+            self.Bind(EVT_VAR_CTRL, self.EvtVariableR, vcr)
+             
+            self.cm = Variable(u'Coefficient "Moment"', 
+                                lstVal = self.opt["Coef_M"], 
+                                typ = VAR_REEL, bornes = [0.01,0.02])
+            vcm = VariableCtrl(self, self.cm, coef = 1, labelMPL = False, signeEgal = False,
+                              help = u"Coefficients de conversion \"données capteur\"/\"moment\"\n" \
+                                u"à régler pour l'étalonnage du capteur.")
+            self.Bind(EVT_VAR_CTRL, self.EvtVariableM, vcm)
+         
+            self.sbs2.Add(vcr, flag = wx.EXPAND|wx.ALL, border = 5)
+            self.Add(vcm, flag = wx.EXPAND|wx.ALL, border = 5)
+        
+        
+        
+        
     
     def EvtComboBox(self, event):
         cb = event.GetEventObject()

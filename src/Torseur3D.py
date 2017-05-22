@@ -98,8 +98,8 @@ LIMITE_X0 = LIMITE_Y0 = LIMITE_Z0 = -300.0
 LIMITE_X1 = LIMITE_Y1 = LIMITE_Z1 = 300.0
 
 # Echelles de vecteur Résultante (mm/N) et des vecteurs Moment(mm/Nm)
-ECHELLE_R = 20.0
-ECHELLE_M = 100.0
+ECHELLE_R = 1
+ECHELLE_M = 5
 
 # Précision d'affichege des composantes
 PRECISION_R = 1
@@ -1050,7 +1050,64 @@ class MPLDroite2D(MPLDroite):
         artists.append(self.dr[0])
         self.artists = artists
     
-   
+    
+    
+def make_get_proj(self, rx, ry, rz):
+    '''
+    Return a variation on :func:`~mpl_toolkit.mplot2d.axes3d.Axes3D.getproj` that
+    makes the box aspect ratio equal to *rx:ry:rz*, using an axes object *self*.
+    source : http://stackoverflow.com/questions/38149736/3d-plot-aspect-ratio-matplotlib
+    '''
+
+    rm = max(rx, ry, rz)
+    kx = rm / rx; ky = rm / ry; kz = rm / rz;
+
+    # Copied directly from mpl_toolkit/mplot3d/axes3d.py. New or modified lines are
+    # marked by ##
+    def get_proj():
+        relev, razim = np.pi * self.elev/180, np.pi * self.azim/180
+
+        xmin, xmax = self.get_xlim3d()
+        ymin, ymax = self.get_ylim3d()
+        zmin, zmax = self.get_zlim3d()
+
+        # transform to uniform world coordinates 0-1.0,0-1.0,0-1.0
+        worldM = proj3d.world_transformation(xmin, xmax,
+                                             ymin, ymax,
+                                             zmin, zmax)
+
+        # adjust the aspect ratio                          ##
+        aspectM = proj3d.world_transformation(-kx + 1, kx, ##
+                                              -ky + 1, ky, ##
+                                              -kz + 1, kz) ##
+
+        # look into the middle of the new coordinates
+        R = np.array([0.5, 0.5, 0.5])
+
+        xp = R[0] + np.cos(razim) * np.cos(relev) * self.dist
+        yp = R[1] + np.sin(razim) * np.cos(relev) * self.dist
+        zp = R[2] + np.sin(relev) * self.dist
+        E = np.array((xp, yp, zp))
+
+        self.eye = E
+        self.vvec = R - E
+        self.vvec = self.vvec / proj3d.mod(self.vvec)
+
+        if abs(relev) > np.pi/2:
+            # upside down
+            V = np.array((0, 0, -1))
+        else:
+            V = np.array((0, 0, 1))
+        zfront, zback = -self.dist, self.dist
+
+        viewM = proj3d.view_transformation(E, R, V)
+        perspM = proj3d.persp_transformation(zfront, zback)
+        M0 = np.dot(viewM, np.dot(aspectM, worldM)) ##
+        M = np.dot(perspM, M0)
+        return M
+    return get_proj
+
+  
 ################################################################################
 #
 #   Fenetre principale 
@@ -1153,7 +1210,7 @@ class Torseur3D(wx.Frame):
         self.SetSizer(hsizer)
         self.Fit()
          
-        wx.EVT_CLOSE(self, self.onClose)
+#         wx.EVT_CLOSE(self, self.onClose)
         wx.EVT_KEY_DOWN(self, self.onKey)
         self.SetFocus()
         
@@ -1220,7 +1277,7 @@ class Torseur3D(wx.Frame):
                 
             print "Port :",DAQ.PORT
             
-            self.InterfaceDAQ = GetInterfaceAuto()
+            self.InterfaceDAQ = GetInterfaceAuto(self)
             if not self.InterfaceDAQ or not self.InterfaceDAQ.estOk():
                 dlg = wx.MessageDialog(None, u'Il faut un port série pour utiliser Torseur3D\n\n' \
                                              u'Mode "Démo" !!',
@@ -1244,6 +1301,10 @@ class Torseur3D(wx.Frame):
             self.kM = 0.0
             self.getTorseur = self.getManuelTorseur
         
+            if hasattr(self, 'InterfaceDAQ') and self.InterfaceDAQ is not None:
+                self.InterfaceDAQ.fermer()
+            
+            
         self.SetTitle("Torseur 3D "+VERSION+" - "+t)    
         
         if self.getTorseur != self.getManuelTorseur:
@@ -1256,6 +1317,7 @@ class Torseur3D(wx.Frame):
             self.t.Start(periode)
             wx.EVT_TIMER(self, TIMER_ID, self.onTimer)
             self.saisie.Show(False)
+        
         else:
             if hasattr(self, 't'):
                 self.t.Stop()
@@ -1284,8 +1346,8 @@ class Torseur3D(wx.Frame):
         global TYPE_DEMO, PAS_R, PAS_M, TAILLE_VECTEUR, TAILLE_POINT, MODE_DEMARRAGE, \
                TAILLE_COMPOSANTES, ECHELLE_R, ECHELLE_M, PRECISION_R, PRECISION_M
         options = Options.Options()
-#         options.optCalibration["Coef_R"] = DAQ.COEF_R
-#         options.optCalibration["Coef_M"] = DAQ.COEF_M
+        options.optCalibration["Coef_R"] = 1
+        options.optCalibration["Coef_M"] = 1
         options.optGenerales["TypeDemo"] = TYPE_DEMO
         options.optCalibration["PORT"] = DAQ.PORT
         options.optGenerales["PAS_R"] = PAS_R
@@ -1348,8 +1410,8 @@ class Torseur3D(wx.Frame):
         global TYPE_DEMO, PAS_R, PAS_M, TAILLE_VECTEUR, TAILLE_POINT, MODE_DEMARRAGE,  \
                TAILLE_COMPOSANTES, ECHELLE_R, ECHELLE_M, PRECISION_R, PRECISION_M
         self.options = options.copie()
-#         DAQ.COEF_R = self.options.optCalibration["Coef_R"]
-#         DAQ.COEF_M = self.options.optCalibration["Coef_M"]
+        DAQ.COEF_R = self.options.optCalibration["Coef_R"]
+        DAQ.COEF_M = self.options.optCalibration["Coef_M"]
         DAQ.PORT = self.options.optCalibration["PORT"]
         
         TYPE_DEMO = self.options.optGenerales["TypeDemo"]
@@ -1378,7 +1440,7 @@ class Torseur3D(wx.Frame):
         except:
             keyname = ""
             
-        if keyname == "P":
+        if keyname == "P" or keycode == wx.WXK_SPACE:
             self.onPause(event)
             self.boutonPause.SetValue(self.pause)
         elif keyname == "T":
@@ -1443,7 +1505,8 @@ class Torseur3D(wx.Frame):
         #
         # Fermeture de l'interface d'acquisition
         #
-        self.InterfaceDAQ.fermer()            #cleanup
+        if hasattr(self, 'InterfaceDAQ'):
+            self.InterfaceDAQ.fermer()            #cleanup
             
         # 
         # Arret du thread de calcul pyStatic
@@ -1547,13 +1610,26 @@ class Torseur3D(wx.Frame):
     def quitter(self, event = None):
         try:
             self.options.enregistrer()
-            print "Options enregistrées"
+            print u"Options enregistrées"
         except IOError:
-            print "   Permission d'enregistrer les options refusée...",
+            print u"   Permission d'enregistrer les options refusée...",
         except:
-            print "   Erreur enregistrement options...",
+            print u"   Erreur enregistrement options...",
     
+        #
+        # Arret du thread de lecture
+        #
+        if hasattr(self, 't'):
+            self.t.Stop()
+
+        #
+        # Fermeture de l'interface d'acquisition
+        #
+        if hasattr(self, 'InterfaceDAQ') and self.InterfaceDAQ is not None:
+            self.InterfaceDAQ.fermer()            #cleanup
+            
         self.pagePyStatic.StopperThread()
+        
         self.Destroy()
         sys.exit()
         
@@ -1803,11 +1879,15 @@ class PanelTorseurs(wx.Panel):
             setp(self.ax.w_yaxis.get_ticklabels(), fontsize=TAILLE_TICKS)
             setp(self.ax.w_zaxis.get_ticklabels(), fontsize=TAILLE_TICKS)
             self.fig.subplots_adjust(left=0, bottom=0, right=1, top=1)
-                                                       
+            
+            self.ax.get_proj = make_get_proj(self.ax, 1, 1, 1)
+            self.ax.set_aspect(1.0)
+
+                 
         self.ax.set_xlabel('x', x = 0, y = 0)
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
-        self.ax.set_aspect('equal', 'datalim')
+#         self.ax.set_aspect('equal', 'datalim')
 #        self.ax.pbaspect = [1.0, 1.0, 1.0]
         
         self.setLimites(multi)
@@ -1878,17 +1958,17 @@ class PanelTorseurs(wx.Panel):
         #
         # Le "cube" pour fixer l'aspect 
         #
-        lx = []
-        ly = []
-        lz = []
-        for x in [0,1]:
-            for y in [0,1]:
-                for z in [0,1]:
-                    lx.append(100*(x-0.5))
-                    ly.append(100*(y-0.5))
-                    lz.append(100*(z-0.5))
-        self.cube = self.ax.plot(lx, ly, lz, 
-                                 mfc = (1,0,0), marker = 'o', visible = False)
+#         lx = []
+#         ly = []
+#         lz = []
+#         for x in [0,1]:
+#             for y in [0,1]:
+#                 for z in [0,1]:
+#                     lx.append(100*(x-0.5))
+#                     ly.append(100*(y-0.5))
+#                     lz.append(100*(z-0.5))
+#         self.cube = self.ax.plot(lx, ly, lz, 
+#                                  mfc = (1,0,0), marker = 'o', visible = True)
         
         
         self.regleVisibilites()
@@ -1918,7 +1998,7 @@ class PanelTorseurs(wx.Panel):
         """ Corrige les limites des 3 axes 2D
             pour corriger le découpage créé par l'aspect "equal'
         """
-                
+        
         def rectifierLim(axe, limitesX, limitesY):
             ly = axe.get_ylim()
             lx = axe.get_xlim()
@@ -1978,8 +2058,10 @@ class PanelTorseurs(wx.Panel):
                       
     ######################################################################################################
     def OnMotion(self, event):
+        
         global LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
         if self.panAx != None and event.inaxes == self.panAx:
+            print "OnMotion", LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
             x, y = event.xdata, event.ydata
             dx, dy = x-self.panX, y-self.panY
             if self.panAx == self.axes['f']:
@@ -1996,10 +2078,13 @@ class PanelTorseurs(wx.Panel):
             
     ######################################################################################################
     def OnPick(self, event):
+        
         if event.mouseevent.button !=1:
             return
         
         global LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
+        print "OnPick", LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
+        
         art = event.artist
         
         def decaleAxe(range, centre):
@@ -2035,6 +2120,11 @@ class PanelTorseurs(wx.Panel):
         """ Applique les nouvelles limites aux axes et echelles aux vecteurs ...
             ... et redessine tout.
         """
+        print "drawNouvLimites", LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
+        print ECHELLE_R, ECHELLE_M
+#         self.ax.get_proj = make_get_proj(self.ax, 1, 1, 1)
+#         self.ax.set_aspect(1.0)
+#         return
         self.setLimites(self.multi)
         self.setEchelles(self.multi)
         
@@ -2071,18 +2161,18 @@ class PanelTorseurs(wx.Panel):
         #
         # Tracé du cube d'encombrement
         #
-        lx = []
-        ly = []
-        lz = []
-        for x in [LIMITE_X0, LIMITE_X1]:
-            for y in [LIMITE_Y0, LIMITE_Y1]:
-                for z in [LIMITE_Z0, LIMITE_Z1]:
-                    lx.append(x)
-                    ly.append(y)
-                    lz.append(z)
-        self.cube[0].set_xdata(lx)
-        self.cube[0].set_ydata(ly)
-        self.cube[0].set_3d_properties(zs = lz)
+#         lx = []
+#         ly = []
+#         lz = []
+#         for x in [LIMITE_X0, LIMITE_X1]:
+#             for y in [LIMITE_Y0, LIMITE_Y1]:
+#                 for z in [LIMITE_Z0, LIMITE_Z1]:
+#                     lx.append(x)
+#                     ly.append(y)
+#                     lz.append(z)
+#         self.cube[0].set_xdata(lx)
+#         self.cube[0].set_ydata(ly)
+#         self.cube[0].set_3d_properties(zs = lz)
         
         self.canvas.draw()
         
@@ -2147,6 +2237,7 @@ class PanelTorseurs(wx.Panel):
         
     #########################################################################################################
     def OnWheel(self, event):
+        print "OnWheel", LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
         global ECHELLE_M, ECHELLE_R, \
                LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
                
@@ -2165,8 +2256,8 @@ class PanelTorseurs(wx.Panel):
             LIMITE_Y0, LIMITE_Y1 = getEchelleAxe(coef, [LIMITE_Y0, LIMITE_Y1], y)
             LIMITE_Z0, LIMITE_Z1 = getEchelleAxe(coef, [LIMITE_Z0, LIMITE_Z1], z)
             
-            ECHELLE_R = ECHELLE_R*coef
-            ECHELLE_M = ECHELLE_M*coef
+#             ECHELLE_R = ECHELLE_R*coef
+#             ECHELLE_M = ECHELLE_M*coef
             
             self.drawNouvLimites()
             
@@ -2183,8 +2274,8 @@ class PanelTorseurs(wx.Panel):
                 LIMITE_X1, LIMITE_X0 = getEchelleAxe(coef, [LIMITE_X1, LIMITE_X0], y)
                 LIMITE_Y0, LIMITE_Y1 = getEchelleAxe(coef, [LIMITE_Y0, LIMITE_Y1], x)
                 
-            ECHELLE_R = ECHELLE_R*coef
-            ECHELLE_M = ECHELLE_M*coef
+#             ECHELLE_R = ECHELLE_R*coef
+#             ECHELLE_M = ECHELLE_M*coef
             
             self.drawNouvLimites()
             

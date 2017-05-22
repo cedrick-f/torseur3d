@@ -38,10 +38,8 @@ void setup() {
   tare();
 }
 
-
-
 void loop() {
-  //printRawData();
+  printRawData();
   //while (!Serial.available()) {} // wait for data to arrive
   
   if (Serial.available() > 0) {
@@ -50,20 +48,10 @@ void loop() {
     
     //power_up();   // Allumage
     
-    if (requete == 'M') {        // Envoi de données
-      sendRawData(); //this is for sending raw data, for where everything else is done in processing
-      }
-    else if (requete == 'T') {   // Tarage
+    if (requete == 'T') {   // Tarage
       tare();
       }
-    else {
-      Serial.write(requete);           // Retour du même caractère
-      //Serial.println();
-      }
-    
-    //power_down(); // Extinction
-    
-    
+      
     Serial.flush();
     //while (Serial.available()) {
     //  Serial.read();
@@ -71,52 +59,33 @@ void loop() {
     }
 }
 
-
-
 void printRawData() {
+  int N = 2;
+  long int V = 0;
   for (int i=0; i<CHANNEL_COUNT; ++i) {
-    results[i] = scales[i].read()-tares[i];
+    for (int j=0; j<N; ++j) {
+      V += scales[i].read() - tares[i];
+    }
+    results[i] = V/N;
+    V = 0;
     Serial.print( -results[i]);  
     Serial.print( (i!=CHANNEL_COUNT-1)?"\t":"\n");
   }  
-  delay(10);
+  
 }
-
-
-void sendRawData() {
-  byte b[4];
-  for (int i=0; i<CHANNEL_COUNT; ++i) {
-    results[i] = scales[i].read()-tares[i];
-    //Serial.print(results[i]);
-    //Serial.print('\t');
-  }
-  byte *buf;
-  buf = (byte *) results;
-  Serial.write(buf, 4*CHANNEL_COUNT); 
-  //Serial.println();
-  delay(10);
-}
-
 
 
 void tare() {
+  Serial.println("Tarage...");
+  int N = 20;
+  long int V = 0;
   for (int i=0; i<CHANNEL_COUNT; ++i) {
-    tares[i] = scales[i].read();
+    for (int j=0; j<N; ++j) {
+      V += scales[i].read();
+      //delay(1);
+    }
+    tares[i] = V/N;
+    V = 0;
   }
 }
 
-
-
-void power_down() {
-  for (int i=0; i<CHANNEL_COUNT; ++i) {
-    scales[i].power_down();
-  }
-}
-
-
-
-void power_up() {
-  for (int i=0; i<CHANNEL_COUNT; ++i) {
-    scales[i].power_up();
-  }
-}
