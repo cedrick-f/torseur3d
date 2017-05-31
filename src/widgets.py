@@ -819,6 +819,9 @@ def mathText(s):
 ############################################################
 # This is where the "magic" happens.
 from matplotlib.mathtext import MathTextParser
+# from matplotlib import rcParams
+# rcParams['text.usetex'] = True
+# rcParams['text.latex.preamble'] = [r'\usepackage{amsmath}']
 #import matplotlib
 mathtext_parser = MathTextParser("Bitmap")
 def mathtext_to_wxbitmap(s, taille = 100, color =  None):

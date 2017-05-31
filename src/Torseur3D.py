@@ -64,7 +64,7 @@ import Options
 from widgets import *
 #import traceback
 
-VERSION = "2.0-beta.2"
+VERSION = "2.1"
 
 
 
@@ -94,16 +94,16 @@ TIMER_ID = wx.NewId()
 PERIODE = 200 #(ms)
 
 # Limites des axes (mm)
-LIMITE_X0 = LIMITE_Y0 = LIMITE_Z0 = -300.0
-LIMITE_X1 = LIMITE_Y1 = LIMITE_Z1 = 300.0
+LIMITE_X0 = LIMITE_Y0 = LIMITE_Z0 = -100.0
+LIMITE_X1 = LIMITE_Y1 = LIMITE_Z1 = 100.0
 
 # Echelles de vecteur Résultante (mm/N) et des vecteurs Moment(mm/Nm)
-ECHELLE_R = 1
-ECHELLE_M = 5
+ECHELLE_R = 100
+ECHELLE_M = 500
 
 # Précision d'affichege des composantes
-PRECISION_R = 1
-PRECISION_M = 2
+PRECISION_R = 2
+PRECISION_M = 3
 
 
 # Type de démo : 0 : aléatoire ; 1 = clavier
@@ -118,7 +118,7 @@ MODE_DEMARRAGE = 0
 TAILLE_VECTEUR = 26
 TAILLE_POINT = 22
 TAILLE_COMPOSANTES = 12
-TAILLE_TICKS = 14
+TAILLE_TICKS = 12
 
 class Chronometre():
     def __init__(self):
@@ -238,7 +238,11 @@ class PointCtrlPanel(wx.Panel):
 #
 ################################################################################
 class VecteurPanel(wx.Panel):
-    def __init__(self, parent, vect = None, nom = '', titre = '', useMPL = False, nc = 1):
+    def __init__(self, parent, vect = None, nom = '', titre = '',
+                 useMPL = False, nc = 2, fontSize = 12, unite = None):
+        
+        font = wx.Font(fontSize, wx.DEFAULT, wx.NORMAL, wx.NORMAL)
+
         if vect == None:
             self.vect = Vecteur()
             self.vect.setComp(vect)
@@ -251,14 +255,19 @@ class VecteurPanel(wx.Panel):
         wx.Panel.__init__(self, parent, -1)
         
         if useMPL:
-            _titre = wx.StaticBitmap(self, -1, mathtext_to_wxbitmap(nom))
+            _titre = wx.StaticBitmap(self, -1, mathtext_to_wxbitmap(nom, taille = fontSize*10))
         else:
             _titre = wx.StaticText(self, -1, nom)
-
+        _titre.SetFont(font)
+        
         vsizer = wx.BoxSizer(wx.VERTICAL)
         self.x = wx.StaticText(self, -1, '')
         self.y = wx.StaticText(self, -1, '')
         self.z = wx.StaticText(self, -1, '')
+        self.x.SetFont(font)
+        self.y.SetFont(font)
+        self.z.SetFont(font)
+        
         vsizer.Add(self.x, flag = wx.ALIGN_LEFT|wx.LEFT, border = 5)
         vsizer.Add(self.y, flag = wx.ALIGN_LEFT|wx.LEFT, border = 5)
         vsizer.Add(self.z, flag = wx.ALIGN_LEFT|wx.LEFT, border = 5)
@@ -266,12 +275,18 @@ class VecteurPanel(wx.Panel):
         
 #        sizer.Add(_titre, flag = wx.ALIGN_CENTER_VERTICAL)
 #        sizer.Add(vsizer, flag = wx.ALIGN_CENTER_VERTICAL)
+        if unite is None:
+            unite = u""
+        u = wx.StaticText(self, -1, unite, style = wx.ALIGN_RIGHT)
+        u.SetFont(font)
         
         sb = wx.StaticBox(self, -1, titre)
+        sb.SetFont(font)
         sz = wx.StaticBoxSizer(sb, wx.HORIZONTAL)
         sz.Add(_titre, flag = wx.ALIGN_CENTER_VERTICAL)
         sz.Add(wx.StaticLine(self, -1, style = wx.LI_VERTICAL), flag = wx.EXPAND)
         sz.Add(vsizer, flag = wx.ALIGN_CENTER_VERTICAL)
+        sz.Add(u, 1, flag = wx.ALIGN_CENTER_VERTICAL)#|wx.EXPAND)#|wx.ALIGN_RIGHT
         
         
         
@@ -1141,6 +1156,18 @@ class Torseur3D(wx.Frame):
         self.pleinEcran = False
         self.makeTB()
         
+        #
+        # Les paramètres généraux
+        #
+        self.tailleFont = 14
+        
+        #
+        # Les constantes
+        #
+        self.nom_R = r"$\overrightarrow{R}$"
+        self.nom_Mp = r"$\overrightarrow{M_P}$"
+        self.nom_Mo = r"$\overrightarrow{M_O}$"
+        
         
         #
         # Les paramètres liés au torseur
@@ -1156,11 +1183,11 @@ class Torseur3D(wx.Frame):
         
         # Page "Torseurs"
         self.pageTorseurs = PanelTorseurs(self.nb, self)
-        self.nb.AddPage(self.pageTorseurs, "Torseurs en perspective")
+        self.nb.AddPage(self.pageTorseurs, u"Torseurs en perspective")
         
         # Page "PyStatic"
         self.pagePyStatic = PanelPyStatic(self.nb, self)
-        self.nb.AddPage(self.pagePyStatic, "Equilibre d'une barre")
+        self.nb.AddPage(self.pagePyStatic, u"Equilibre d'une barre")
 
         self.nb.ChangeSelection(MODE_DEMARRAGE)
         self.nb.Bind(wx.EVT_NOTEBOOK_PAGE_CHANGED, self.OnPageChanged)
@@ -1169,16 +1196,20 @@ class Torseur3D(wx.Frame):
         # Le panel de commande
         #
         psizer = wx.BoxSizer(wx.VERTICAL)
-        size = (210,-1)
-        self.panelCommande = wx.Panel(self, -1, size = size)
-        self.panelCommande.SetMinSize(size)
-        self.panelCommande.SetMaxSize(size)
+#         size = (210,-1)
+        self.panelCommande = wx.Panel(self, -1)#, size = size)
+#         self.panelCommande.SetMinSize(size)
+#         self.panelCommande.SetMaxSize(size)
         
         vsizer = wx.BoxSizer(wx.HORIZONTAL)
-        self.panelResultante = VecteurPanel(self.panelCommande, nom = r"$\vec{R}$", 
-                                            titre = u"Résultante (N)", useMPL = True, nc = PRECISION_R)
-        self.panelMoment = VecteurPanel(self.panelCommande, nom = r"$\vec{M}_P$", 
-                                        titre = u"Moment en P (Nm)", useMPL = True, nc = PRECISION_M)
+        self.panelResultante = VecteurPanel(self.panelCommande, nom = self.nom_R, 
+                                            titre = u"Résultante", useMPL = True,
+                                            nc = PRECISION_R, unite = u"N",
+                                            fontSize = self.tailleFont)
+        self.panelMoment = VecteurPanel(self.panelCommande, nom = self.nom_Mp, 
+                                        titre = u"Moment en P", useMPL = True,
+                                        nc = PRECISION_M, unite = u"Nm",
+                                        fontSize = self.tailleFont)
         vsizer.Add(self.panelResultante, 1, flag = wx.EXPAND|wx.ALL, border = 3)
         vsizer.Add(self.panelMoment, 1, flag = wx.EXPAND|wx.ALL, border = 3)
         self.imgTorseurO = wx.StaticBitmap(self.panelCommande, -1, 
@@ -1219,6 +1250,8 @@ class Torseur3D(wx.Frame):
         
         self.onTarer()
     
+        self.panelResultante.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
+        self.panelMoment.Bind(wx.EVT_MOUSEWHEEL, self.OnWheel)
         self.Bind(wx.EVT_CLOSE, self.quitter)
         self.SetSize((805,619))
     
@@ -1426,11 +1459,17 @@ class Torseur3D(wx.Frame):
         TAILLE_COMPOSANTES = options.optAffichage["TAILLE_COMPOSANTES"]
         ECHELLE_R = options.optAffichage["ECHELLE_R"]
         ECHELLE_M = options.optAffichage["ECHELLE_M"]
+        
+        self.AppliquerOptions(options)
     
     ##########################################################################
-    def AppliquerOptions(self, options):    
-        self.panelResultante.nc = PRECISION_R
-        self.panelMoment.nc = PRECISION_M
+    def AppliquerOptions(self, options = None):   
+        print "AppliquerOptions" , PRECISION_R
+        if hasattr(self, 'pageTorseurs'):
+            self.panelResultante.nc = PRECISION_R
+            self.panelMoment.nc = PRECISION_M
+            self.pageTorseurs.InitDraw()
+            self.actualiser()
         
     ##########################################################################
     def onKey(self, event = None):
@@ -1492,6 +1531,25 @@ class Torseur3D(wx.Frame):
         self.tb.Realize()
 #        self.SetFocus()
     
+    
+    #########################################################################################################
+    def OnWheel(self, event):
+        global PRECISION_R, PRECISION_M
+        p = event.GetEventObject()
+        s = event.GetWheelRotation()
+        if p == self.panelResultante:
+            if s > 0 and PRECISION_R < 4:
+                PRECISION_R += 1
+            elif s < 0 and PRECISION_R > 1:
+                PRECISION_R -= 1
+            self.AppliquerOptions()
+        elif p == self.panelMoment:
+            if s > 0 and PRECISION_M < 4:
+                PRECISION_M += 1
+            elif s < 0 and PRECISION_R > 1:
+                PRECISION_M -= 1
+            self.AppliquerOptions()
+                
     ###########################################################################
     def onClose(self, event):
         """Called on application shutdown."""
@@ -1583,10 +1641,7 @@ class Torseur3D(wx.Frame):
 
         self.nb.GetCurrentPage().actualiser(self.tors, self.torsO)
         
-        self.panelResultante.actualiser(self.tors.R)
-        self.panelMoment.actualiser(self.tors.M)
-        self.imgTorseur.SetBitmap(self.tors.getBitmap(ncR = PRECISION_R, ncM = PRECISION_M))
-        self.imgTorseurO.SetBitmap(self.torsO.getBitmap(ncR = PRECISION_R, ncM = PRECISION_M))
+        self.actualiser()
         
         self.panelCommande.Layout()
         self.Layout()
@@ -1594,6 +1649,14 @@ class Torseur3D(wx.Frame):
 #        self.SetFocus()
 
 
+    ###########################################################################
+    def actualiser(self):
+        self.panelResultante.actualiser(self.tors.R)
+        self.panelMoment.actualiser(self.tors.M)
+        self.imgTorseur.SetBitmap(self.tors.getBitmap(ncR = PRECISION_R, ncM = PRECISION_M))
+        self.imgTorseurO.SetBitmap(self.torsO.getBitmap(ncR = PRECISION_R, ncM = PRECISION_M))
+        self.Refresh()
+        
     ###########################################################################
     def onEraseBackground(self, evt):
         # this is supposed to prevent redraw flicker on some X servers...
@@ -1812,15 +1875,25 @@ class PanelTorseurs(wx.Panel):
         self.vectMoment.setEchelle(em)
         self.vectMomentO.setEchelle(em)
         
-        
-        
+#         
+#     ##########################################################################
+#     def AppliquerOptions(self, options):
+#         print "AppliquerOptions"
+#         PRECISION_R = options.optAffichage["PRECISION_R"]
+#         PRECISION_M = options.optAffichage["PRECISION_M"]
+#         
+#         self.panelResultante.nc = PRECISION_R
+#         self.panelMoment.nc = PRECISION_M
+#         self.InitDraw(self.multi)
         
     ######################################################################################################
-    def InitDraw(self, multi):
+    def InitDraw(self, multi = None):
         """ Initialise les axes
             (pour un passage de 1 à 4 vues)
         """
-        
+        if multi is None:
+            multi = self.multi
+            
         if multi:
             self.vues = ['f', 'g', 'd']
             self.axes = {}
@@ -1831,6 +1904,7 @@ class PanelTorseurs(wx.Panel):
             self.axes['f'].set_ylabel("z")
             self.axes['f'].get_xaxis().set_ticks_position('top')
             self.axes['f'].get_xaxis().set_label_position('top')
+            
             self.axes['f'].get_yaxis().get_label().set_rotation(0) 
             self.axes['f'].spines['bottom'].set_visible(True)
 #            self.axes['f'].set_aspect('equal', 'datalim')
@@ -1903,32 +1977,32 @@ class PanelTorseurs(wx.Panel):
             
             for vue in self.vues:
                 self.vectR[vue] = MPLVecteur2D(self.axes[vue], vue = vue, coul = COUL_RESULTANTE.GetAsString(wx.C2S_HTML_SYNTAX), 
-                                                   nom = r"$\vec{R}$", echelle = ECHELLE_R/m, 
+                                                   nom = self.app.nom_R, echelle = ECHELLE_R/m, 
                                                    visible = self.tracerResultantes, nc = PRECISION_R)
                 self.vectRO[vue] = MPLVecteur2D(self.axes[vue], vue = vue, coul = COUL_RESULTANTE.GetAsString(wx.C2S_HTML_SYNTAX), 
-                                                   nom = r"$\vec{R}$", echelle = ECHELLE_R/m, 
+                                                   nom = self.app.nom_R, echelle = ECHELLE_R/m, 
                                                    visible = self.tracerResultantes * self.tracerActionOrig, nc = PRECISION_R)
                 self.vectM[vue] = MPLVecteur2D(self.axes[vue], vue = vue, coul = COUL_MOMENT.GetAsString(wx.C2S_HTML_SYNTAX), 
-                                               nom = r"$\vec{M}_P$", echelle = ECHELLE_M/m, 
+                                               nom = self.app.nom_Mp, echelle = ECHELLE_M/m, 
                                                    visible = self.tracerMoments, nc = PRECISION_M)
                 self.vectMO[vue] = MPLVecteur2D(self.axes[vue], vue = vue, coul = COUL_MOMENT.GetAsString(wx.C2S_HTML_SYNTAX), 
-                                                nom = r"$\vec{M}_O$", echelle = ECHELLE_M/m, 
+                                                nom = self.app.nom_Mo, echelle = ECHELLE_M/m, 
                                                    visible = self.tracerMoments * self.tracerActionOrig, nc = PRECISION_M)
                 
                 self.axeC[vue] = MPLDroite2D(self.axes[vue], vue = vue)
         
         
         self.vectResultante = MPLVecteur3D(self.ax, coul = COUL_RESULTANTE.GetAsString(wx.C2S_HTML_SYNTAX), 
-                                           nom = r"$\vec{R}$", echelle = ECHELLE_R/m, 
+                                           nom = self.app.nom_R, echelle = ECHELLE_R/m, 
                                            visible = self.tracerResultantes, nc = PRECISION_R)
         self.vectResultanteO = MPLVecteur3D(self.ax, coul = COUL_RESULTANTE.GetAsString(wx.C2S_HTML_SYNTAX), 
-                                           nom = r"$\vec{R}$", echelle = ECHELLE_R/m, 
+                                           nom = self.app.nom_R, echelle = ECHELLE_R/m, 
                                            visible = self.tracerResultantes * self.tracerActionOrig, nc = PRECISION_R)
         self.vectMoment = MPLVecteur3D(self.ax, coul = COUL_MOMENT.GetAsString(wx.C2S_HTML_SYNTAX), 
-                                       nom = r"$\vec{M}_P$", echelle = ECHELLE_M/m, 
+                                       nom = self.app.nom_Mp, echelle = ECHELLE_M/m, 
                                            visible = self.tracerMoments, nc = PRECISION_M)
         self.vectMomentO = MPLVecteur3D(self.ax, coul = COUL_MOMENT.GetAsString(wx.C2S_HTML_SYNTAX), 
-                                        nom = r"$\vec{M}_O$", echelle = ECHELLE_M/m, 
+                                        nom = self.app.nom_Mo, echelle = ECHELLE_M/m, 
                                            visible = self.tracerMoments * self.tracerActionOrig, nc = PRECISION_M)
         
         self.axeCentral = MPLDroite3D(self.ax)
@@ -2061,7 +2135,7 @@ class PanelTorseurs(wx.Panel):
         
         global LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
         if self.panAx != None and event.inaxes == self.panAx:
-            print "OnMotion", LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
+#             print "OnMotion", LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
             x, y = event.xdata, event.ydata
             dx, dy = x-self.panX, y-self.panY
             if self.panAx == self.axes['f']:
@@ -2083,7 +2157,7 @@ class PanelTorseurs(wx.Panel):
             return
         
         global LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
-        print "OnPick", LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
+#         print "OnPick", LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
         
         art = event.artist
         
@@ -2120,8 +2194,8 @@ class PanelTorseurs(wx.Panel):
         """ Applique les nouvelles limites aux axes et echelles aux vecteurs ...
             ... et redessine tout.
         """
-        print "drawNouvLimites", LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
-        print ECHELLE_R, ECHELLE_M
+#         print "drawNouvLimites", LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
+#         print ECHELLE_R, ECHELLE_M
 #         self.ax.get_proj = make_get_proj(self.ax, 1, 1, 1)
 #         self.ax.set_aspect(1.0)
 #         return
@@ -2237,10 +2311,10 @@ class PanelTorseurs(wx.Panel):
         
     #########################################################################################################
     def OnWheel(self, event):
-        print "OnWheel", LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
+        
         global ECHELLE_M, ECHELLE_R, \
                LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1
-               
+        print "OnWheel", LIMITE_X0, LIMITE_X1, LIMITE_Y0, LIMITE_Y1, LIMITE_Z0, LIMITE_Z1       
         step = event.step
         coef = exp(step/100)
         
@@ -2249,38 +2323,53 @@ class PanelTorseurs(wx.Panel):
             L1 = centre - (centre-rng[1])*coef
             return L0, L1
         
-        if event.inaxes == self.ax:
-            x, y, z = self.coord3D(event.xdata, event.ydata)
-            
-            LIMITE_X0, LIMITE_X1 = getEchelleAxe(coef, [LIMITE_X0, LIMITE_X1], x)
-            LIMITE_Y0, LIMITE_Y1 = getEchelleAxe(coef, [LIMITE_Y0, LIMITE_Y1], y)
-            LIMITE_Z0, LIMITE_Z1 = getEchelleAxe(coef, [LIMITE_Z0, LIMITE_Z1], z)
-            
-#             ECHELLE_R = ECHELLE_R*coef
-#             ECHELLE_M = ECHELLE_M*coef
-            
-            self.drawNouvLimites()
-            
-        elif event.inaxes in self.axes.values():
-            x, y = event.xdata, event.ydata
-
-            if event.inaxes == self.axes['f']:
-                LIMITE_Y0, LIMITE_Y1 = getEchelleAxe(coef, [LIMITE_Y0, LIMITE_Y1], x)
-                LIMITE_Z0, LIMITE_Z1 = getEchelleAxe(coef, [LIMITE_Z0, LIMITE_Z1], y)
-            elif event.inaxes == self.axes['g']:
-                LIMITE_X0, LIMITE_X1 = getEchelleAxe(coef, [LIMITE_X0, LIMITE_X1], x)
-                LIMITE_Z0, LIMITE_Z1 = getEchelleAxe(coef, [LIMITE_Z0, LIMITE_Z1], y)
-            else:
-                LIMITE_X1, LIMITE_X0 = getEchelleAxe(coef, [LIMITE_X1, LIMITE_X0], y)
-                LIMITE_Y0, LIMITE_Y1 = getEchelleAxe(coef, [LIMITE_Y0, LIMITE_Y1], x)
+        if event.key is None:
+            if event.inaxes == self.ax:
+                x, y, z = self.coord3D(event.xdata, event.ydata)
                 
-#             ECHELLE_R = ECHELLE_R*coef
-#             ECHELLE_M = ECHELLE_M*coef
+                LIMITE_X0, LIMITE_X1 = getEchelleAxe(coef, [LIMITE_X0, LIMITE_X1], x)
+                LIMITE_Y0, LIMITE_Y1 = getEchelleAxe(coef, [LIMITE_Y0, LIMITE_Y1], y)
+                LIMITE_Z0, LIMITE_Z1 = getEchelleAxe(coef, [LIMITE_Z0, LIMITE_Z1], z)
+                
+    #             ECHELLE_R = ECHELLE_R*coef
+    #             ECHELLE_M = ECHELLE_M*coef
+                
+                self.drawNouvLimites()
+                
+            elif event.inaxes in self.axes.values():
+                x, y = event.xdata, event.ydata
+    
+                if event.inaxes == self.axes['f']:
+                    LIMITE_Y0, LIMITE_Y1 = getEchelleAxe(coef, [LIMITE_Y0, LIMITE_Y1], x)
+                    LIMITE_Z0, LIMITE_Z1 = getEchelleAxe(coef, [LIMITE_Z0, LIMITE_Z1], y)
+                elif event.inaxes == self.axes['g']:
+                    LIMITE_X0, LIMITE_X1 = getEchelleAxe(coef, [LIMITE_X0, LIMITE_X1], x)
+                    LIMITE_Z0, LIMITE_Z1 = getEchelleAxe(coef, [LIMITE_Z0, LIMITE_Z1], y)
+                else:
+                    LIMITE_X1, LIMITE_X0 = getEchelleAxe(coef, [LIMITE_X1, LIMITE_X0], y)
+                    LIMITE_Y0, LIMITE_Y1 = getEchelleAxe(coef, [LIMITE_Y0, LIMITE_Y1], x)
+                    
+    #             ECHELLE_R = ECHELLE_R*coef
+    #             ECHELLE_M = ECHELLE_M*coef
+                
+                self.drawNouvLimites()
+            else:
+                return
             
-            self.drawNouvLimites()
-            
-        else:
-            return
+        elif event.key == "ctrl+control":
+            if event.inaxes == self.ax:
+                ECHELLE_R = ECHELLE_R*coef
+                ECHELLE_M = ECHELLE_M*coef
+                
+                self.drawNouvLimites()
+                
+            elif event.inaxes in self.axes.values():
+                ECHELLE_R = ECHELLE_R*coef
+                ECHELLE_M = ECHELLE_M*coef
+                
+                self.drawNouvLimites()
+            else:
+                return
             
         
     #########################################################################################################
@@ -2562,9 +2651,9 @@ class PanelPyStatic(wx.Panel):
         self.legender = True
         self._G = mathtext_to_wxbitmap(r"$G$", taille = 80)
         self._P = mathtext_to_wxbitmap(r"$P$", taille = 80)
-        self._vM = mathtext_to_wxbitmap(r'$\vec{M}_P$', taille = 80)
-        self._vR = mathtext_to_wxbitmap(r'$\vec{R}$', taille = 80)
-        self._vP = mathtext_to_wxbitmap(r'$\vec{P}$', taille = 80)
+        self._vM = mathtext_to_wxbitmap(r'$\overrightarrow{M_P}$', taille = 80)
+        self._vR = mathtext_to_wxbitmap(r'$\overrightarrow{R}$', taille = 80)
+        self._vP = mathtext_to_wxbitmap(r'$\overrightarrow{P}$', taille = 80)
         
         #
         # La Barre ...

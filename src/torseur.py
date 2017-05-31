@@ -36,6 +36,7 @@ import wx
 import os
 import numpy
 from numpy import sqrt
+from widgets import mathtext_to_wxbitmap
 
 rapportUniteLong = {'m' : 1,
                     'mm': 0.001}
@@ -258,6 +259,16 @@ class Torseur():
         return ""
 
     def getBitmap(self, bg = None, ncR = 1, ncM = 2):
+#         t = r"$\{ \mathcal{T} _{\overline{E} \rightarrow E} \} = \{ \stackrel{3}{\stackrel{4}{5}} \}$"
+# #              %{'Rx' : self.R.x,
+# #                                           'Ry' : self.R.y,
+# #                                           'Rz' : self.R.z}
+#         return mathtext_to_wxbitmap(t)
+#      
+#     
+#                 r"%(Rx).5g \\" \
+#             r"%(Ry).4g \\" \
+#             r"%(Rz).1g " \
         tt = 88
         yt = 30
         xc = 10+tt
@@ -304,49 +315,52 @@ class Torseur():
 ########################################################################################################  
 
 # Matrices de rotation obtenues avec Solidworks
-# Modèle File = C:\Users\Cedrick\Dropbox\SSIBP2015_2016\Dossiers Techniques Systèmes Labo\Capteur_AM_6axes\Capteur 6 axes V2.SLDASM
+# Modèle File = C:\Users\Cedrick\Dropbox\SSIBP2015_2016\Dossiers Techniques Systèmes Labo\Capteur_AM_6axes\Capteur 6 axes V5.SLDASM
+# Executer la macro Matrice.swp sur chacun des systèmes de coordonnées R1 à R6
+# Récupérer les résultats dans la fenêtre d'exécution de la macro
+
 
 sld_matrix = ["""R1
-    Origin                    = (51,9615242270663; 30; -90,1576172004121) mm
-    Rotational sub-matrix 1   = (0,742610657232506; -0,428746462856272; -0,514495755427526)
-    Rotational sub-matrix 2   = (0,606175165017196; 0,756923528069376; 0,244168880022379)
-    Rotational sub-matrix 3   = (0,28474739872575; -0,493196961916072; 0,821994936526787)
-    Translation vector       = (-51,9615242270663; -30; 90,1576172004121) mm
+    Origin                    = (46,7653718043597; 27; -88,8828656495125) mm
+    Rotational sub-matrix 1   = (0,733428244557477; -0,423444994426534; -0,531768132535648)
+    Rotational sub-matrix 2   = (0,613142188485272; 0,74985020926891; 0,248558484785498)
+    Rotational sub-matrix 3   = (0,29349559925973; -0,508349289715728; 0,809593313250973)
+    Translation vector       = (-46,7653718043597; -27; 88,8828656495125) mm
     Scale                     = 1""",
     """R2
-    Origin                    = (-51,9615242270663; 30; -90,1576172004121) mm
-    Rotational sub-matrix 1   = (-0,742610657232506; -0,428746462856273; -0,514495755427527)
-    Rotational sub-matrix 2   = (0,606175165017196; -0,756923528069376; -0,244168880022379)
-    Rotational sub-matrix 3   = (-0,28474739872575; -0,493196961916072; 0,821994936526787)
-    Translation vector       = (51,9615242270663; -30; 90,1576172004121) mm
+    Origin                    = (-46,7653718043597; 27; -88,8828656495125) mm
+    Rotational sub-matrix 1   = (-0,733428244557477; -0,423444994426534; -0,531768132535647)
+    Rotational sub-matrix 2   = (0,613142188485272; -0,74985020926891; -0,248558484785498)
+    Rotational sub-matrix 3   = (-0,29349559925973; -0,508349289715727; 0,809593313250973)
+    Translation vector       = (46,7653718043597; -27; 88,8828656495125) mm
     Scale                     = 1""",
     """R3
-    Origin                    = (-51,9615242270663; 30; -90,1576172004121) mm
-    Rotational sub-matrix 1   = (-2,97502621743517E-16; 0,857492925712544; -0,514495755427527)
-    Rotational sub-matrix 2   = (-0,958602586538822; 0,146501328013427; 0,244168880022379)
-    Rotational sub-matrix 3   = (0,284747398725749; 0,493196961916072; 0,821994936526786)
-    Translation vector       = (51,9615242270663; -30; 90,1576172004121) mm
+    Origin                    = (-46,7653718043597; 27; -88,8828656495125) mm
+    Rotational sub-matrix 1   = (-1,088236996469E-16; 0,846889988853069; -0,531768132535647)
+    Rotational sub-matrix 2   = (-0,95596042450259; 0,156071606725777; 0,248558484785498)
+    Rotational sub-matrix 3   = (0,29349559925973; 0,508349289715727; 0,809593313250973)
+    Translation vector       = (46,7653718043597; -27; 88,8828656495125) mm
     Scale                     = 1""",
     """R4
-    Origin                    = (-1,04083408558608E-14; -60; -90,1576172004121) mm
-    Rotational sub-matrix 1   = (0,742610657232506; -0,428746462856272; -0,514495755427527)
-    Rotational sub-matrix 2   = (0,352427421521626; 0,903424856082804; -0,244168880022379)
-    Rotational sub-matrix 3   = (0,569494797451499; -3,88578058618805E-16; 0,821994936526786)
-    Translation vector       = (1,04083408558608E-14; 60; 90,1576172004121) mm
+    Origin                    = (1,73472347597681E-14; -54; -88,8828656495125) mm
+    Rotational sub-matrix 1   = (0,733428244557478; -0,423444994426534; -0,531768132535647)
+    Rotational sub-matrix 2   = (0,342818236017317; 0,905921815994688; -0,248558484785497)
+    Rotational sub-matrix 3   = (0,58699119851946; 4,9960036108132E-16; 0,809593313250973)
+    Translation vector       = (-1,73472347597681E-14; 54; 88,8828656495125) mm
     Scale                     = 1""",
     """R5
-    Origin                    = (-1,04083408558608E-14; -60; -90,1576172004121) mm
-    Rotational sub-matrix 1   = (-0,742610657232506; -0,428746462856272; -0,514495755427526)
-    Rotational sub-matrix 2   = (0,352427421521626; -0,903424856082804; 0,244168880022379)
-    Rotational sub-matrix 3   = (-0,569494797451499; 0; 0,821994936526787)
-    Translation vector       = (1,04083408558608E-14; 60; 90,1576172004121) mm
+    Origin                    = (1,73472347597681E-14; -54; -88,8828656495125) mm
+    Rotational sub-matrix 1   = (-0,733428244557477; -0,423444994426534; -0,531768132535647)
+    Rotational sub-matrix 2   = (0,342818236017318; -0,905921815994687; 0,248558484785497)
+    Rotational sub-matrix 3   = (-0,58699119851946; 5,55111512312578E-17; 0,809593313250973)
+    Translation vector       = (-1,73472347597681E-14; 54; 88,8828656495125) mm
     Scale                     = 1""",
     """R6
-    Origin                    = (51,9615242270663; 30; -90,1576172004121) mm
-    Rotational sub-matrix 1   = (9,91675405811725E-17; 0,857492925712544; -0,514495755427527)
-    Rotational sub-matrix 2   = (-0,958602586538822; -0,146501328013428; -0,24416888002238)
-    Rotational sub-matrix 3   = (-0,28474739872575; 0,493196961916072; 0,821994936526786)
-    Translation vector       = (-51,9615242270663; -30; 90,1576172004121) mm
+    Origin                    = (46,7653718043597; 27; -88,8828656495125) mm
+    Rotational sub-matrix 1   = (-0; 0,846889988853069; -0,531768132535647)
+    Rotational sub-matrix 2   = (-0,95596042450259; -0,156071606725777; -0,248558484785498)
+    Rotational sub-matrix 3   = (-0,29349559925973; 0,508349289715727; 0,809593313250973)
+    Translation vector       = (-46,7653718043597; -27; 88,8828656495125) mm
     Scale                     = 1"""]
 
 sld_matrix2 = []
