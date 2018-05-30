@@ -64,7 +64,7 @@ import Options
 from widgets import *
 #import traceback
 
-VERSION = "2.1"
+VERSION = "2.2"
 
 
 
@@ -99,7 +99,7 @@ LIMITE_X1 = LIMITE_Y1 = LIMITE_Z1 = 100.0
 
 # Echelles de vecteur Résultante (mm/N) et des vecteurs Moment(mm/Nm)
 ECHELLE_R = 100
-ECHELLE_M = 500
+ECHELLE_M = 600
 
 # Précision d'affichege des composantes
 PRECISION_R = 2
@@ -1297,22 +1297,29 @@ class Torseur3D(wx.Frame):
             #
             # Ouverture de l'interface d'acquisition
             #
-            if DAQ.PORT == '':
-                dlg = wx.MessageDialog(None, u"Veuillez sélectionner le port série "\
+            continuer = True
+            while DAQ.PORT == '' and continuer:
+                dlg = wx.MessageDialog(self, u"Veuillez sélectionner le port série "\
                                              u"sur lequel est connecté le banc.",
                                        u'Choix du port série',
-                                       wx.OK | wx.ICON_INFORMATION
-                                       #wx.YES_NO | wx.NO_DEFAULT | wx.CANCEL | wx.ICON_INFORMATION
+                                       wx.OK | wx.CANCEL| wx.ICON_INFORMATION
+                                       #wx.YES_NO | wx.NO_DEFAULT  | wx.ICON_INFORMATION
                                        )
-                dlg.ShowModal()
-                dlg.Destroy()
-                self.onOptions(page = 0)
+                val = dlg.ShowModal()
+    
+                if val == wx.ID_OK:
+                    self.onOptions(page = 0)
+                    dlg.Destroy()
+                else:
+                    dlg.Destroy()
+                    return
+                
                 
             print "Port :",DAQ.PORT
             
             self.InterfaceDAQ = GetInterfaceAuto(self)
             if not self.InterfaceDAQ or not self.InterfaceDAQ.estOk():
-                dlg = wx.MessageDialog(None, u'Il faut un port série pour utiliser Torseur3D\n\n' \
+                dlg = wx.MessageDialog(self, u'Il faut un port série pour utiliser Torseur3D\n\n' \
                                              u'Mode "Démo" !!',
                                    u'Pas de port série',
                                    wx.OK | wx.ICON_ERROR 
@@ -1504,7 +1511,7 @@ class Torseur3D(wx.Frame):
 
     ##########################################################################
     def onTarer(self, event = None):
-        if hasattr(self, 'InterfaceDAQ'):
+        if hasattr(self, 'InterfaceDAQ') and self.InterfaceDAQ is not None:
             self.InterfaceDAQ.tarer()
         self.pagePyStatic.onTarer()
 #        self.SetFocus()

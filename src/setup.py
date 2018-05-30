@@ -40,9 +40,14 @@ includefiles.append(("C:/Python27/Lib/site-packages/mpl_toolkits","mpl_toolkits"
 if sys.platform == "win32":
     includefiles.extend([('C:\Users\Cedrick\Documents\Developp\Microsoft.VC90.CRT', "Microsoft.VC90.CRT"),])
 
+import scipy
+scipy_path = os.path.dirname(scipy.__file__)
+#includefiles.append(scipy_path)
+
 # Dependencies are automatically detected, but it might need fine tuning.
-build_exe_options = {"packages": ["os","collections"], 
-                     "includes" : ['mpl_toolkits.mplot3d'],
+build_exe_options = {"packages": ["os","collections", "scipy"], 
+                     "includes" : ['mpl_toolkits.mplot3d', 
+                                  ],
                      "excludes": ["tkinter",
                                   '_gtkagg', '_tkagg', 'bsddb', 'curses', 'pywin.debugger',
                                   'pywin.debugger.dbgcon', 'pywin.dialogs', 'tcl',
@@ -55,6 +60,7 @@ build_exe_options = {"packages": ["os","collections"],
                                   "numpy.core._dotblas",
                                   "collections.sys", "collections._weakref"
                                   ],
+                     "optimize" : 0,
                      "include_files": includefiles,
                      'bin_excludes' : ['libgdk-win32-2.0-0.dll', 'libgobject-2.0-0.dll', 'tcl85.dll',
                                         'tk85.dll', "UxTheme.dll", "mswsock.dll", "POWRPROF.dll",

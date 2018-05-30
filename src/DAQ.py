@@ -45,6 +45,10 @@ import torseur
 import collections
 import time
 
+import winsound
+frequency = 2500  # Set Frequency To 2500 Hertz
+duration = 100  # Set Duration To 1000 ms == 1 second
+
 
 ################################################################################
 ################################################################################
@@ -82,7 +86,7 @@ def testPort(port, BaudRate, dlg, message, count):
 #         print "test port", port, BaudRate, "...", 
         s = serial.Serial(port=port, baudrate = BaudRate, bytesize = 8,
                                     parity='N', stopbits=1,
-                                    timeout=5, xonxoff=0, rtscts=0)
+                                    timeout=1, xonxoff=0, rtscts=0)
 #        s.timeout = 0.5   #make sure that the alive event can be checked from time to time
         count += 1
         message += u"Ok\n"
@@ -110,7 +114,8 @@ def testPort(port, BaudRate, dlg, message, count):
 ################################################################################
 class InterfaceAcquisition():
 
-    def __init__(self, dlg, message, count, serial = None, port = None):
+    def __init__(self, dlg, message, count, serial = None, port = None,
+                 pile = 3):
         #
         # La connection série
         #
@@ -128,8 +133,8 @@ class InterfaceAcquisition():
         self.tare = [0] * 6
         self.code = [0] * 6
 #         self.codeBrut = [0] * 6
-        self.codeBrut = [collections.deque(maxlen=3) for i in range(6)]
-        self.temps = [collections.deque(maxlen=3) for i in range(6)]
+        self.codeBrut = [collections.deque(maxlen=pile) for i in range(6)]
+        self.temps = [collections.deque(maxlen=pile) for i in range(6)]
 
 
     
@@ -189,7 +194,7 @@ class InterfaceAcquisitionJEULIN(InterfaceAcquisition):
     G = 10
     
     # Valeur maxi admissible sur la jauge de déformation (BIP si dépassée)
-    MAX_JAUGE = 260
+    MAX_JAUGE = 300
 
 
     ###########################################################################
@@ -266,7 +271,8 @@ class InterfaceAcquisitionJEULIN(InterfaceAcquisition):
             # On écrit le code de la jauge sur le port série
             self.serial.write(chr(n))
             # On lit la réponse du banc (2 caractères)         
-            text = self.serial.read(2)          
+            text = self.serial.read(2)   
+                  
             if text:                            
                 # On transforme les 2 caractères lus en un mot de 16 bits
                 n10 = ord(text[1])*256+ord(text[0])
@@ -275,12 +281,13 @@ class InterfaceAcquisitionJEULIN(InterfaceAcquisition):
                 else:
                     _n10 = n10
                 self.codeBrut[i].append(_n10)
-                
+                v = filtrer_median(self.codeBrut[i])
                 # On applique la tare
-                c = _n10 - self.tare[i]
+                c = v - self.tare[i]
                 
                 if abs(c) > self.MAX_JAUGE:
-                    print "\a" # Envoie un BIP en cas de dépassement
+                    winsound.Beep(frequency, duration)
+                    #print "\a" # Envoie un BIP en cas de dépassement
                     code.append(sign(c) * self.MAX_JAUGE)
                 else:
                     code.append(c)
@@ -336,7 +343,7 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
     ###########################################################################
     def __init__(self, dlg, message, count):
         self.BaudRate = 115200
-        InterfaceAcquisition.__init__(self, dlg, message, count)
+        InterfaceAcquisition.__init__(self, dlg, message, count, pile = 6)
         
     
     ###########################################################################
@@ -477,7 +484,7 @@ class InterfaceAcquisitionArduino(InterfaceAcquisition):
             self.dlg.Destroy()
 
 
-
+##########################################################################################
 def GetInterfaceAuto(win):
     """ Détection automatisque du type d'interface
     """
@@ -677,7 +684,8 @@ class myProgressDialog(wx.Frame):
     
     def OnClick(self, event):
         self.GetParent().Enable(True)
-        if event.GetEventObject().GetLabel()[0] == u"A":
+        if event.GetEventObject().GetId() == self.btn:
+            self.Destroy()
             self.stop = True
         else:
             self.Destroy()
@@ -764,6 +772,12 @@ def filtrer(temps, v):
 
     return v[2]
 
+from numpy import median
+def filtrer_median(v):
+    u""" Vérifie la validité des données
+        >>> calcul de médiane
+    """
+    return median(v)
 
 
 if __name__ == '__main__':
